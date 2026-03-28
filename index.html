@@ -1,0 +1,1434 @@
+<!DOCTYPE html>
+<html lang="en" id="html-root">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#4F46E5">
+  <title>Medicine Reminder</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:system-ui,-apple-system,sans-serif}
+
+    /* Loading */
+    #loading-overlay{position:fixed;inset:0;background:rgba(255,255,255,.88);display:flex;align-items:center;justify-content:center;z-index:999}
+    .spinner{width:40px;height:40px;border:4px solid #E0E7FF;border-top-color:#4F46E5;border-radius:50%;animation:spin .7s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    /* Toast */
+    #toast{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);
+      background:#1e293b;color:#fff;padding:.75rem 1.5rem;border-radius:.75rem;
+      font-size:.85rem;z-index:1000;opacity:0;pointer-events:none;
+      transition:opacity .3s;white-space:nowrap;max-width:90vw}
+    #toast.show{opacity:1}
+
+    /* Auth */
+    .auth-card{background:#fff;border-radius:1.5rem;box-shadow:0 10px 40px rgba(79,70,229,.12);padding:2.5rem;width:100%;max-width:420px;margin:auto}
+    .auth-input{width:100%;padding:.85rem 1rem;border:1.5px solid #e5e7eb;border-radius:.75rem;font-size:.95rem;transition:border .2s;outline:none}
+    .auth-input:focus{border-color:#4F46E5;box-shadow:0 0 0 3px rgba(79,70,229,.1)}
+    .auth-btn{width:100%;padding:.9rem;background:#4F46E5;color:#fff;border:none;border-radius:.75rem;font-size:1rem;font-weight:600;cursor:pointer;transition:background .2s}
+    .auth-btn:hover{background:#4338CA}
+    .auth-btn:disabled{background:#a5b4fc;cursor:not-allowed}
+    .auth-link{color:#4F46E5;font-weight:500;cursor:pointer;text-decoration:underline}
+    .auth-error{background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;border-radius:.6rem;padding:.65rem 1rem;font-size:.85rem;display:none}
+    .auth-error.show{display:block}
+    .pw-wrap{position:relative}
+    .pw-toggle{position:absolute;right:.85rem;top:50%;transform:translateY(-50%);cursor:pointer;color:#9ca3af;font-size:.85rem;user-select:none}
+
+    /* Tabs */
+    .tab-btn{flex:1;padding:.6rem;font-size:.72rem;font-weight:600;border-radius:.5rem;transition:all .2s;color:#6b7280;cursor:pointer;border:none;background:transparent}
+    .tab-btn.active{background:#4F46E5;color:#fff}
+
+    /* Status badges */
+    .status-normal{color:#059669;background:#d1fae5}
+    .status-high{color:#dc2626;background:#fee2e2}
+    .status-low{color:#d97706;background:#fef3c7}
+
+    /* Dose buttons */
+    .dose-btn{padding:.4rem .9rem;border-radius:.5rem;font-size:.75rem;font-weight:600;cursor:pointer;transition:all .15s;border:none}
+    .dose-take{background:#d1fae5;color:#065f46;border:1.5px solid #6ee7b7 !important}
+    .dose-taken:hover,.dose-taken.active{background:#059669;color:#fff}
+    .dose-skipped{background:#fee2e2;color:#991b1b;border:1.5px solid #fca5a5 !important}
+    .dose-skipped:hover,.dose-skipped.active{background:#dc2626;color:#fff}
+
+    /* Vital cards */
+    .vital-card{border-left:4px solid #e5e7eb}
+    .vital-card.normal{border-left-color:#059669}
+    .vital-card.high{border-left-color:#dc2626}
+    .vital-card.low{border-left-color:#d97706}
+
+    canvas{max-height:220px}
+
+    /* Password strength */
+    .strength-bar{height:4px;border-radius:2px;transition:width .3s,background .3s}
+
+    /* Alarm overlay */
+    @keyframes alarmPulse{
+      0%,100%{transform:scale(1);background:#fee2e2}
+      50%{transform:scale(1.12);background:#fca5a5}
+    }
+    #alarm-overlay{background:rgba(0,0,0,0.75) !important}
+
+    /* Language selector */
+    .lang-bar{background:#f8fafc;border-bottom:1px solid #e2e8f0;padding:.5rem 1rem;display:flex;align-items:center;gap:.75rem;flex-wrap:wrap}
+    .lang-select{padding:.3rem .6rem;border:1px solid #e2e8f0;border-radius:.5rem;font-size:.8rem;color:#374151;background:#fff;cursor:pointer}
+    .translate-btn{padding:.3rem .75rem;background:#4F46E5;color:#fff;border:none;border-radius:.5rem;font-size:.75rem;font-weight:600;cursor:pointer;white-space:nowrap}
+    .translate-btn:hover{background:#4338CA}
+    .translate-badge{font-size:.7rem;color:#6b7280;display:flex;align-items:center;gap:.3rem}
+    .translate-input-wrap{position:relative}
+    .translate-input-wrap .auto-translate-btn{position:absolute;right:.5rem;top:50%;transform:translateY(-50%);padding:.2rem .5rem;background:#ede9fe;color:#4F46E5;border:none;border-radius:.4rem;font-size:.7rem;cursor:pointer}
+    .translating{opacity:.6;pointer-events:none}
+  </style>
+</head>
+<body class="bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 min-h-screen">
+
+<div id="loading-overlay" style="display:none"><div class="spinner"></div></div>
+<div id="toast"></div>
+
+<!-- ══ LANGUAGE BAR (always visible) ══════════════════════════════════════ -->
+<div class="lang-bar" id="lang-bar">
+  <span class="text-xs font-semibold text-gray-500">🌐 Language:</span>
+  <select id="ui-lang" class="lang-select" onchange="changeUiLanguage(this.value)">
+    <option value="en">English</option>
+    <option value="hi">हिन्दी (Hindi)</option>
+    <option value="te">తెలుగు (Telugu)</option>
+    <option value="ta">தமிழ் (Tamil)</option>
+    <option value="kn">ಕನ್ನಡ (Kannada)</option>
+    <option value="ml">മലയാളം (Malayalam)</option>
+    <option value="mr">मराठी (Marathi)</option>
+    <option value="bn">বাংলা (Bengali)</option>
+    <option value="gu">ગુજરાતી (Gujarati)</option>
+    <option value="pa">ਪੰਜਾਬੀ (Punjabi)</option>
+    <option value="ur">اردو (Urdu)</option>
+    <option value="ar">العربية (Arabic)</option>
+    <option value="fr">Français (French)</option>
+    <option value="de">Deutsch (German)</option>
+    <option value="es">Español (Spanish)</option>
+    <option value="pt">Português (Portuguese)</option>
+    <option value="ru">Русский (Russian)</option>
+    <option value="zh">中文 (Chinese)</option>
+    <option value="ja">日本語 (Japanese)</option>
+    <option value="ko">한국어 (Korean)</option>
+  </select>
+  <button class="translate-btn" onclick="translatePage()">Translate Page</button>
+  <span class="translate-badge" id="translate-status"></span>
+</div>
+
+<!-- ══ ALARM OVERLAY ═══════════════════════════════════════════════════════ -->
+<div id="alarm-overlay" style="display:none"
+  class="fixed inset-0 z-50 flex items-center justify-center p-4"
+  style="background:rgba(0,0,0,0.7)">
+  <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-sm w-full text-center animate-pulse">
+    <div class="w-24 h-24 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-5"
+         style="animation:alarmPulse 1s ease-in-out infinite">
+      <svg class="w-12 h-12 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+      </svg>
+    </div>
+    <p class="text-xs font-semibold text-red-400 uppercase tracking-widest mb-2" data-i18n="alarm_title">Medicine Alarm</p>
+    <h2 class="text-2xl font-bold text-gray-900 mb-1" id="alarm-med-name">Medicine Name</h2>
+    <p class="text-base text-gray-500 mb-6" id="alarm-med-dosage">Dosage</p>
+    <p class="text-sm text-gray-400 mb-6" data-i18n="alarm_msg">Time to take your medicine!</p>
+    <button onclick="stopAlarm()"
+      class="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-4 rounded-2xl text-lg transition-colors" data-i18n="alarm_ok">
+      ✓ OK, I'll take it now
+    </button>
+    <button onclick="snoozeAlarm()"
+      class="w-full mt-3 bg-gray-100 hover:bg-gray-200 text-gray-600 font-medium py-3 rounded-2xl text-sm transition-colors" data-i18n="alarm_snooze">
+      ⏰ Snooze 5 minutes
+    </button>
+  </div>
+</div>
+
+<!-- ══ LOGIN SCREEN ════════════════════════════════════════════════════════ -->
+<div id="login-screen" style="display:none" class="min-h-screen flex items-center justify-center p-4">
+  <div class="auth-card">
+    <div class="text-center mb-7">
+      <div class="w-16 h-16 bg-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+        <svg class="w-9 h-9 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
+        </svg>
+      </div>
+      <h1 class="text-2xl font-bold text-gray-900" data-i18n="app_name">Medicine Reminder</h1>
+      <p class="text-sm text-gray-500 mt-1" data-i18n="login_subtitle">Sign in to your account</p>
+    </div>
+    <div id="login-error" class="auth-error mb-4"></div>
+    <div class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1.5" data-i18n="username">Username</label>
+        <input type="text" id="login-username" class="auth-input" placeholder="Enter your username"
+          autocomplete="username" onkeydown="if(event.key==='Enter')loginSubmit()">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1.5" data-i18n="password">Password</label>
+        <div class="pw-wrap">
+          <input type="password" id="login-password" class="auth-input" placeholder="Enter your password"
+            autocomplete="current-password" onkeydown="if(event.key==='Enter')loginSubmit()">
+          <span class="pw-toggle" onclick="togglePw('login-password',this)" data-i18n="show">Show</span>
+        </div>
+      </div>
+      <button class="auth-btn mt-2" id="login-btn" onclick="loginSubmit()" data-i18n="sign_in">Sign In</button>
+    </div>
+    <p class="text-center text-sm text-gray-500 mt-6">
+      <span data-i18n="no_account">Don't have an account?</span>
+      <span class="auth-link" onclick="showScreen('register-screen')" data-i18n="create_one">Create one</span>
+    </p>
+  </div>
+</div>
+
+<!-- ══ REGISTER SCREEN ════════════════════════════════════════════════════ -->
+<div id="register-screen" style="display:none" class="min-h-screen flex items-center justify-center p-4">
+  <div class="auth-card">
+    <div class="text-center mb-7">
+      <div class="w-16 h-16 bg-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+        <svg class="w-9 h-9 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+        </svg>
+      </div>
+      <h1 class="text-2xl font-bold text-gray-900" data-i18n="create_account">Create Account</h1>
+      <p class="text-sm text-gray-500 mt-1" data-i18n="register_subtitle">Set up your Medicine Reminder</p>
+    </div>
+    <div id="register-error" class="auth-error mb-4"></div>
+    <div class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1.5" data-i18n="username">Username <span class="text-gray-400">(min 3 chars)</span></label>
+        <input type="text" id="reg-username" class="auth-input" placeholder="Choose a username"
+          autocomplete="username" oninput="checkRegForm()">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1.5">Email <span class="text-gray-400">(optional)</span></label>
+        <input type="email" id="reg-email" class="auth-input" placeholder="your@email.com" autocomplete="email">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1.5" data-i18n="password">Password <span class="text-gray-400">(min 6 chars)</span></label>
+        <div class="pw-wrap">
+          <input type="password" id="reg-password" class="auth-input" placeholder="Create a strong password"
+            autocomplete="new-password" oninput="checkPwStrength();checkRegForm()">
+          <span class="pw-toggle" onclick="togglePw('reg-password',this)" data-i18n="show">Show</span>
+        </div>
+        <div class="mt-2 bg-gray-100 rounded-full h-1.5 overflow-hidden">
+          <div id="pw-strength-bar" class="strength-bar h-full w-0 bg-gray-300"></div>
+        </div>
+        <p id="pw-strength-label" class="text-xs text-gray-400 mt-1"></p>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1.5" data-i18n="confirm_pw">Confirm Password</label>
+        <div class="pw-wrap">
+          <input type="password" id="reg-confirm" class="auth-input" placeholder="Re-enter password"
+            autocomplete="new-password" oninput="checkRegForm()" onkeydown="if(event.key==='Enter')registerSubmit()">
+          <span class="pw-toggle" onclick="togglePw('reg-confirm',this)" data-i18n="show">Show</span>
+        </div>
+        <p id="pw-match-label" class="text-xs mt-1"></p>
+      </div>
+      <button class="auth-btn mt-2" id="register-btn" onclick="registerSubmit()" disabled data-i18n="create_account">Create Account</button>
+    </div>
+    <p class="text-center text-sm text-gray-500 mt-6">
+      <span data-i18n="have_account">Already have an account?</span>
+      <span class="auth-link" onclick="showScreen('login-screen')" data-i18n="sign_in">Sign in</span>
+    </p>
+  </div>
+</div>
+
+<!-- ══ MAIN APP ════════════════════════════════════════════════════════════ -->
+<div id="app-screen" style="display:none" class="p-4">
+  <div class="max-w-2xl mx-auto">
+
+    <!-- Profile Selection -->
+    <div id="profile-screen" style="display:none">
+      <div class="bg-white rounded-2xl shadow-lg p-8 text-center">
+        <div class="bg-indigo-600 p-4 rounded-xl w-16 h-16 mx-auto mb-4">
+          <svg class="text-white w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+        </div>
+        <h2 class="text-2xl font-bold text-gray-800 mb-2" data-i18n="choose_profile">Choose Profile</h2>
+        <p class="text-gray-500 mb-6" data-i18n="select_who">Select who is using the app</p>
+        <div id="profile-list" class="space-y-3 mb-6"></div>
+        <button onclick="showAddProfile()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-lg font-medium transition-colors" data-i18n="add_profile">+ Add New Profile</button>
+      </div>
+    </div>
+
+    <!-- Add Profile -->
+    <div id="add-profile-screen" style="display:none">
+      <div class="bg-white rounded-2xl shadow-lg p-8">
+        <h2 class="text-2xl font-bold text-gray-800 mb-6" data-i18n="create_profile">Create Profile</h2>
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2" data-i18n="name">Name</label>
+            <input type="text" id="profile-name" placeholder="e.g., Mom, Dad, Grandma" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2" data-i18n="choose_color">Choose Color</label>
+            <div class="grid grid-cols-6 gap-3">
+              <button onclick="selectColor('#EF4444')" class="w-12 h-12 rounded-lg bg-red-500 hover:ring-2 ring-gray-400"></button>
+              <button onclick="selectColor('#F59E0B')" class="w-12 h-12 rounded-lg bg-amber-500 hover:ring-2 ring-gray-400"></button>
+              <button onclick="selectColor('#10B981')" class="w-12 h-12 rounded-lg bg-emerald-500 hover:ring-2 ring-gray-400"></button>
+              <button onclick="selectColor('#3B82F6')" class="w-12 h-12 rounded-lg bg-blue-500 hover:ring-2 ring-gray-400"></button>
+              <button onclick="selectColor('#8B5CF6')" class="w-12 h-12 rounded-lg bg-violet-500 hover:ring-2 ring-gray-400"></button>
+              <button onclick="selectColor('#EC4899')" class="w-12 h-12 rounded-lg bg-pink-500 hover:ring-2 ring-gray-400"></button>
+            </div>
+          </div>
+          <div class="flex gap-3 pt-4">
+            <button onclick="saveProfile()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-lg font-medium" data-i18n="create_profile">Create Profile</button>
+            <button onclick="cancelAddProfile()" class="px-6 bg-gray-200 text-gray-800 py-3 rounded-lg font-medium" data-i18n="cancel">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Screen -->
+    <div id="main-screen" style="display:none">
+
+      <!-- Header -->
+      <div class="bg-white rounded-2xl shadow-lg p-5 mb-4">
+        <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center gap-3">
+            <div id="profile-avatar" class="p-3 rounded-xl">
+              <svg class="text-white w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+            </div>
+            <div>
+              <h1 class="text-xl font-bold text-gray-800" data-i18n="app_name">Medicine Reminder</h1>
+              <p id="profile-subtitle" class="text-xs text-gray-500"></p>
+            </div>
+          </div>
+          <div class="flex gap-1.5 flex-wrap justify-end">
+            <button onclick="switchProfile()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-medium" data-i18n="switch">Switch</button>
+            <button onclick="manageProfiles()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-medium" data-i18n="manage">Manage</button>
+            <button onclick="showChangePassword()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-medium">🔑 <span data-i18n="password">Password</span></button>
+            <button onclick="doLogout()" class="bg-red-50 hover:bg-red-100 text-red-600 px-3 py-1.5 rounded-lg text-xs font-medium" data-i18n="logout">Logout</button>
+          </div>
+        </div>
+        <div class="flex items-center justify-between text-xs text-gray-400">
+          <span id="user-badge" class="font-medium text-indigo-600"></span>
+          <div class="flex items-center gap-1.5">
+            <span id="backend-dot" class="inline-block w-2 h-2 rounded-full bg-gray-300"></span>
+            <span id="backend-label">Connecting…</span>
+          </div>
+        </div>
+        <!-- Notification banner -->
+        <div id="notif-banner" style="display:none" class="mt-3 bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+          <div class="flex items-center gap-3">
+            <div class="flex-1">
+              <p class="text-sm text-yellow-800 font-medium" data-i18n="enable_notif">Enable Notifications</p>
+              <p class="text-xs text-yellow-700" data-i18n="notif_desc">Receive medicine reminders on time</p>
+            </div>
+            <button onclick="requestNotifications()" class="bg-yellow-600 hover:bg-yellow-700 text-white text-xs px-3 py-2 rounded-lg" data-i18n="enable">Enable</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab bar -->
+      <div class="flex gap-1 bg-white rounded-xl shadow p-1 mb-4">
+        <button class="tab-btn active" id="tab-medicines" onclick="switchTab('medicines')">💊 <span data-i18n="medicines">Medicines</span></button>
+        <button class="tab-btn" id="tab-today"     onclick="switchTab('today')">📅 <span data-i18n="today">Today</span></button>
+        <button class="tab-btn" id="tab-analytics" onclick="switchTab('analytics')">📊 <span data-i18n="analytics">Analytics</span></button>
+        <button class="tab-btn" id="tab-vitals"    onclick="switchTab('vitals')">❤️ <span data-i18n="vitals">Vitals</span></button>
+      </div>
+
+      <!-- TAB: MEDICINES -->
+      <div id="pane-medicines">
+        <div id="add-form" style="display:none" class="bg-white rounded-2xl shadow-lg p-6 mb-4">
+          <h2 class="text-lg font-semibold text-gray-800 mb-4" data-i18n="add_medicine">Add New Medicine</h2>
+          <div class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="medicine_name">Medicine Name</label>
+              <!-- Input with translate button -->
+              <div class="translate-input-wrap flex gap-2">
+                <input type="text" id="med-name" placeholder="e.g., Aspirin" class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                <button onclick="translateFieldToEn('med-name')" class="translate-btn" title="Translate to English">🌐</button>
+              </div>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="dosage">Dosage</label>
+              <div class="flex gap-2">
+                <input type="text" id="med-dosage" placeholder="e.g., 1 tablet, 5ml" class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                <button onclick="translateFieldToEn('med-dosage')" class="translate-btn" title="Translate to English">🌐</button>
+              </div>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="reminder_times">Reminder Times</label>
+              <div id="time-slots"></div>
+              <button onclick="addTimeSlot()" class="text-indigo-600 text-sm font-medium mt-2" data-i18n="add_time">+ Add Another Time</button>
+            </div>
+            <div class="flex gap-3 pt-2">
+              <button onclick="saveMedicine()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-lg font-medium" data-i18n="save_medicine">Save Medicine</button>
+              <button onclick="toggleAddForm()" class="px-6 bg-gray-200 text-gray-800 py-3 rounded-lg font-medium" data-i18n="cancel">Cancel</button>
+            </div>
+          </div>
+        </div>
+        <button onclick="toggleAddForm()" id="add-med-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl font-medium mb-4 flex items-center justify-center gap-2">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+          <span data-i18n="add_medicine">Add Medicine</span>
+        </button>
+        <div id="medicine-list"></div>
+      </div>
+
+      <!-- TAB: TODAY -->
+      <div id="pane-today" style="display:none">
+        <div class="bg-white rounded-2xl shadow-lg p-5 mb-4">
+          <h2 class="text-lg font-semibold text-gray-800 mb-1" data-i18n="todays_doses">Today's Doses</h2>
+          <p class="text-sm text-gray-500" id="today-date"></p>
+        </div>
+        <div id="today-list"></div>
+      </div>
+
+      <!-- TAB: ANALYTICS -->
+      <div id="pane-analytics" style="display:none">
+        <div class="bg-white rounded-2xl shadow-lg p-5 mb-4">
+          <h2 class="text-lg font-semibold text-gray-800 mb-1" data-i18n="analytics_title">Adherence Analytics</h2>
+          <p class="text-sm text-gray-500" data-i18n="select_medicine">Select a medicine to view stats</p>
+        </div>
+        <div id="analytics-med-selector" class="space-y-2 mb-4"></div>
+        <div id="analytics-panel" style="display:none" class="space-y-4"></div>
+      </div>
+
+      <!-- TAB: VITALS -->
+      <div id="pane-vitals" style="display:none">
+        <div class="bg-white rounded-2xl shadow-lg p-5 mb-4">
+          <h2 class="text-lg font-semibold text-gray-800 mb-4" data-i18n="log_vital">Log Health Vital</h2>
+          <div class="space-y-3">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="metric">Metric</label>
+              <select id="vital-metric" onchange="onVitalMetricChange()" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                <option value="">-- Select --</option>
+                <option value="bp_sys">BP Systolic (mmHg)</option>
+                <option value="bp_dia">BP Diastolic (mmHg)</option>
+                <option value="sugar_fasting">Blood Sugar Fasting (mg/dL)</option>
+                <option value="sugar_pp">Blood Sugar Post-Meal (mg/dL)</option>
+                <option value="heart_rate">Heart Rate (bpm)</option>
+                <option value="spo2">SpO₂ (%)</option>
+                <option value="weight">Weight (kg)</option>
+                <option value="temperature">Temperature (°C)</option>
+                <option value="cholesterol">Total Cholesterol (mg/dL)</option>
+                <option value="hba1c">HbA1c (%)</option>
+              </select>
+            </div>
+            <div id="vital-threshold-hint" class="hidden text-xs px-3 py-2 rounded-lg bg-indigo-50 text-indigo-700"></div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="value">Value</label>
+              <input type="number" id="vital-value" step="0.1" placeholder="Enter value" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="notes">Notes (optional)</label>
+              <div class="flex gap-2">
+                <input type="text" id="vital-notes" placeholder="e.g., After breakfast" class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                <button onclick="translateFieldToEn('vital-notes')" class="translate-btn" title="Translate to English">🌐</button>
+              </div>
+            </div>
+            <button onclick="saveVital()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-lg font-medium" data-i18n="log_vital_btn">Log Vital</button>
+          </div>
+        </div>
+        <div class="bg-white rounded-2xl shadow-lg p-5 mb-4">
+          <h3 class="text-base font-semibold text-gray-800 mb-3" data-i18n="normal_ranges">Normal Ranges Reference</h3>
+          <div id="threshold-table" class="space-y-1"></div>
+        </div>
+        <div class="bg-white rounded-2xl shadow-lg p-5 mb-4">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-base font-semibold text-gray-800" data-i18n="recent_readings">Recent Readings</h3>
+            <select id="vitals-filter" onchange="filterVitals()" class="text-xs border border-gray-200 rounded-lg px-2 py-1">
+              <option value="">All metrics</option>
+              <option value="bp_sys">BP Systolic</option>
+              <option value="bp_dia">BP Diastolic</option>
+              <option value="sugar_fasting">Sugar Fasting</option>
+              <option value="sugar_pp">Sugar Post-Meal</option>
+              <option value="heart_rate">Heart Rate</option>
+              <option value="spo2">SpO₂</option>
+              <option value="weight">Weight</option>
+              <option value="temperature">Temperature</option>
+              <option value="cholesterol">Cholesterol</option>
+              <option value="hba1c">HbA1c</option>
+            </select>
+          </div>
+          <div id="vitals-list"></div>
+        </div>
+        <div class="bg-white rounded-2xl shadow-lg p-5 mb-4" id="vitals-chart-card" style="display:none">
+          <h3 class="text-base font-semibold text-gray-800 mb-3" id="vitals-chart-title">Trend</h3>
+          <canvas id="vitals-chart"></canvas>
+        </div>
+      </div>
+
+    </div><!-- /main-screen -->
+
+    <!-- Manage Profiles -->
+    <div id="manage-screen" style="display:none">
+      <div class="bg-white rounded-2xl shadow-lg p-8">
+        <div class="flex items-center justify-between mb-6">
+          <h2 class="text-2xl font-bold text-gray-800" data-i18n="manage_profiles">Manage Profiles</h2>
+          <button onclick="backToMain()" class="text-gray-600 hover:text-gray-800">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+        <div id="manage-profile-list" class="space-y-3"></div>
+      </div>
+    </div>
+
+    <!-- Change Password -->
+    <div id="change-pw-screen" style="display:none">
+      <div class="bg-white rounded-2xl shadow-lg p-8 max-w-md mx-auto">
+        <div class="flex items-center justify-between mb-6">
+          <h2 class="text-xl font-bold text-gray-800" data-i18n="change_password">Change Password</h2>
+          <button onclick="backToMain()" class="text-gray-400 hover:text-gray-600">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+        <div id="cpw-error" class="auth-error mb-4"></div>
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="current_pw">Current Password</label>
+            <div class="pw-wrap">
+              <input type="password" id="cpw-old" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="Current password">
+              <span class="pw-toggle" onclick="togglePw('cpw-old',this)" data-i18n="show">Show</span>
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="new_pw">New Password</label>
+            <div class="pw-wrap">
+              <input type="password" id="cpw-new" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="New password (min 6 chars)">
+              <span class="pw-toggle" onclick="togglePw('cpw-new',this)" data-i18n="show">Show</span>
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="confirm_pw">Confirm New Password</label>
+            <div class="pw-wrap">
+              <input type="password" id="cpw-confirm" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="Repeat new password">
+              <span class="pw-toggle" onclick="togglePw('cpw-confirm',this)" data-i18n="show">Show</span>
+            </div>
+          </div>
+          <button onclick="submitChangePassword()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-lg font-medium" data-i18n="update_pw">Update Password</button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /max-w -->
+</div><!-- /app-screen -->
+
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+// Config & state
+// ─────────────────────────────────────────────────────────────────────────────
+const API_BASE = window.location.origin + "/api";
+
+let authToken      = sessionStorage.getItem("med_token")    || null;
+let authUsername   = sessionStorage.getItem("med_username") || null;
+let profiles       = [];
+let currentProfile = null;
+let times          = ["09:00"];
+let selectedColor  = "#8B5CF6";
+let allMedicines   = [];
+let allVitals      = [];
+let vitalsChartObj = null;
+let adherenceChart = null;
+const THRESHOLDS   = {};
+
+// Current UI language
+let currentLang = localStorage.getItem("med_lang") || "en";
+
+const APP_SCREENS = ["login-screen","register-screen","app-screen"];
+const SUB_SCREENS = ["profile-screen","add-profile-screen","main-screen","manage-screen","change-pw-screen"];
+const PANES       = ["medicines","today","analytics","vitals"];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// i18n strings
+// ─────────────────────────────────────────────────────────────────────────────
+const I18N = {
+  en: {
+    app_name:"Medicine Reminder", login_subtitle:"Sign in to your account",
+    username:"Username", password:"Password", show:"Show", hide:"Hide",
+    sign_in:"Sign In", no_account:"Don't have an account?", create_one:"Create one",
+    create_account:"Create Account", register_subtitle:"Set up your Medicine Reminder",
+    confirm_pw:"Confirm Password", have_account:"Already have an account?",
+    choose_profile:"Choose Profile", select_who:"Select who is using the app",
+    add_profile:"+ Add New Profile", create_profile:"Create Profile",
+    name:"Name", choose_color:"Choose Color", cancel:"Cancel",
+    switch:"Switch", manage:"Manage", logout:"Logout",
+    medicines:"Medicines", today:"Today", analytics:"Analytics", vitals:"Vitals",
+    add_medicine:"Add Medicine", medicine_name:"Medicine Name", dosage:"Dosage",
+    reminder_times:"Reminder Times", add_time:"+ Add Another Time",
+    save_medicine:"Save Medicine", todays_doses:"Today's Doses",
+    analytics_title:"Adherence Analytics", select_medicine:"Select a medicine to view stats",
+    log_vital:"Log Health Vital", metric:"Metric", value:"Value",
+    notes:"Notes (optional)", log_vital_btn:"Log Vital",
+    normal_ranges:"Normal Ranges Reference", recent_readings:"Recent Readings",
+    manage_profiles:"Manage Profiles", change_password:"Change Password",
+    current_pw:"Current Password", new_pw:"New Password", update_pw:"Update Password",
+    alarm_title:"Medicine Alarm", alarm_msg:"Time to take your medicine!",
+    alarm_ok:"✓ OK, I'll take it now", alarm_snooze:"⏰ Snooze 5 minutes",
+    enable_notif:"Enable Notifications", notif_desc:"Receive medicine reminders on time",
+    enable:"Enable",
+  }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Translation helpers
+// ─────────────────────────────────────────────────────────────────────────────
+async function apiTranslate(text, targetLang, sourceLang = "auto") {
+  if (!text || text.trim() === "" || targetLang === sourceLang) return text;
+  try {
+    const res  = await fetch(API_BASE + "/translate", {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({text, target: targetLang, source: sourceLang})
+    });
+    const data = await res.json();
+    return data.translated || text;
+  } catch {
+    return text;
+  }
+}
+
+// Translate a single input field value → English (for saving to DB)
+async function translateFieldToEn(inputId) {
+  const inp = document.getElementById(inputId);
+  if (!inp || !inp.value.trim()) return;
+  const btn = inp.nextElementSibling || inp.parentElement.querySelector("button");
+  if (btn) btn.textContent = "…";
+  const translated = await apiTranslate(inp.value.trim(), "en", "auto");
+  inp.value = translated;
+  if (btn) btn.textContent = "🌐";
+  showToast("Translated to English ✓");
+}
+
+// Translate all [data-i18n] elements on the page to currentLang
+async function translatePage() {
+  if (currentLang === "en") {
+    applyI18nEnglish();
+    document.getElementById("translate-status").textContent = "";
+    return;
+  }
+  document.getElementById("translate-status").textContent = "Translating…";
+  const elements  = document.querySelectorAll("[data-i18n]");
+  const keyMap    = {};
+  const englishMap = I18N.en;
+
+  // Collect unique english strings to translate in batch
+  const uniqueTexts = new Set();
+  elements.forEach(el => {
+    const key  = el.getAttribute("data-i18n");
+    const text = englishMap[key];
+    if (text) uniqueTexts.add(text);
+  });
+
+  // Translate each unique string
+  const translated = {};
+  for (const text of uniqueTexts) {
+    translated[text] = await apiTranslate(text, currentLang, "en");
+  }
+
+  // Apply to DOM
+  elements.forEach(el => {
+    const key  = el.getAttribute("data-i18n");
+    const orig = englishMap[key];
+    if (orig && translated[orig]) {
+      el.textContent = translated[orig];
+    }
+  });
+
+  document.getElementById("translate-status").textContent = `✓ Translated`;
+  showToast("Page translated!");
+}
+
+function applyI18nEnglish() {
+  const map = I18N.en;
+  document.querySelectorAll("[data-i18n]").forEach(el => {
+    const key = el.getAttribute("data-i18n");
+    if (map[key]) el.textContent = map[key];
+  });
+}
+
+function changeUiLanguage(lang) {
+  currentLang = lang;
+  localStorage.setItem("med_lang", lang);
+  if (lang === "en") {
+    applyI18nEnglish();
+    document.getElementById("translate-status").textContent = "";
+  } else {
+    translatePage();
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Utility
+// ─────────────────────────────────────────────────────────────────────────────
+function showLoading(on) {
+  document.getElementById("loading-overlay").style.display = on ? "flex" : "none";
+}
+function showToast(msg, ms=2800) {
+  const t = document.getElementById("toast");
+  t.textContent = msg; t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), ms);
+}
+function showScreen(id) {
+  APP_SCREENS.forEach(s =>
+    document.getElementById(s).style.display = s === id ? (id === "app-screen" ? "block" : "flex") : "none"
+  );
+}
+function showSubScreen(id) {
+  SUB_SCREENS.forEach(s =>
+    document.getElementById(s).style.display = s === id ? "block" : "none"
+  );
+}
+function switchTab(tab) {
+  PANES.forEach(p => {
+    document.getElementById("pane-" + p).style.display = p === tab ? "block" : "none";
+    document.getElementById("tab-"  + p).classList.toggle("active", p === tab);
+  });
+  if (tab === "today")     renderToday();
+  if (tab === "analytics") renderAnalyticsMedList();
+  if (tab === "vitals")    loadAndRenderVitals();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// API wrapper
+// ─────────────────────────────────────────────────────────────────────────────
+async function api(path, opts = {}) {
+  showLoading(true);
+  try {
+    const headers = {"Content-Type": "application/json"};
+    if (authToken) headers["Authorization"] = "Bearer " + authToken;
+    const res  = await fetch(API_BASE + path, {
+      ...opts, headers,
+      body: opts.body ? JSON.stringify(opts.body) : undefined
+    });
+    const data = await res.json();
+    if (res.status === 401) { doLogout(true); throw new Error("Session expired."); }
+    if (!res.ok) throw new Error(data.error || "API error");
+    return data;
+  } finally { showLoading(false); }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Auth
+// ─────────────────────────────────────────────────────────────────────────────
+function togglePw(inputId, btn) {
+  const inp = document.getElementById(inputId);
+  if (inp.type === "password") { inp.type = "text";     btn.textContent = "Hide"; }
+  else                         { inp.type = "password"; btn.textContent = "Show"; }
+}
+
+function checkPwStrength() {
+  const pw  = document.getElementById("reg-password").value;
+  const bar = document.getElementById("pw-strength-bar");
+  const lbl = document.getElementById("pw-strength-label");
+  let score = 0;
+  if (pw.length >= 6)  score++;
+  if (pw.length >= 10) score++;
+  if (/[A-Z]/.test(pw)) score++;
+  if (/[0-9]/.test(pw)) score++;
+  if (/[^A-Za-z0-9]/.test(pw)) score++;
+  const levels = [
+    {w:"0%",  c:"bg-gray-300",   t:""},
+    {w:"25%", c:"bg-red-400",    t:"Weak"},
+    {w:"50%", c:"bg-orange-400", t:"Fair"},
+    {w:"75%", c:"bg-yellow-400", t:"Good"},
+    {w:"90%", c:"bg-green-400",  t:"Strong"},
+    {w:"100%",c:"bg-green-500",  t:"Very Strong"},
+  ];
+  const lvl = levels[Math.min(score, 5)];
+  bar.style.width = lvl.w;
+  bar.className   = `strength-bar h-full ${lvl.c}`;
+  lbl.textContent = lvl.t;
+  lbl.style.color = score >= 3 ? "#059669" : "#d97706";
+}
+
+function checkRegForm() {
+  const user    = document.getElementById("reg-username").value.trim();
+  const pw      = document.getElementById("reg-password").value;
+  const confirm = document.getElementById("reg-confirm").value;
+  const btn     = document.getElementById("register-btn");
+  const matchLbl= document.getElementById("pw-match-label");
+  if (confirm.length > 0) {
+    matchLbl.textContent = pw === confirm ? "✓ Passwords match" : "✗ Passwords don't match";
+    matchLbl.style.color = pw === confirm ? "#059669" : "#dc2626";
+  } else { matchLbl.textContent = ""; }
+  btn.disabled = !(user.length >= 3 && pw.length >= 6 && pw === confirm);
+}
+
+function showAuthError(screenId, msg) {
+  const el = document.getElementById(screenId);
+  el.textContent = msg; el.classList.add("show");
+  setTimeout(() => el.classList.remove("show"), 5000);
+}
+
+async function loginSubmit() {
+  const username = document.getElementById("login-username").value.trim();
+  const password = document.getElementById("login-password").value;
+  if (!username || !password) { showAuthError("login-error","Enter username and password"); return; }
+  const btn = document.getElementById("login-btn");
+  btn.disabled = true; btn.textContent = "Signing in…";
+  try {
+    const data = await api("/auth/login", {method:"POST", body:{username, password}});
+    authToken    = data.token;
+    authUsername = data.username;
+    sessionStorage.setItem("med_token",    authToken);
+    sessionStorage.setItem("med_username", authUsername);
+    await enterApp();
+  } catch(e) {
+    showAuthError("login-error", e.message);
+  } finally {
+    btn.disabled = false; btn.textContent = "Sign In";
+  }
+}
+
+async function registerSubmit() {
+  const username = document.getElementById("reg-username").value.trim();
+  const password = document.getElementById("reg-password").value;
+  const email    = document.getElementById("reg-email").value.trim();
+  if (document.getElementById("reg-confirm").value !== password) {
+    showAuthError("register-error", "Passwords don't match"); return;
+  }
+  const btn = document.getElementById("register-btn");
+  btn.disabled = true; btn.textContent = "Creating account…";
+  try {
+    const data = await api("/auth/register", {method:"POST", body:{username, password, email}});
+    authToken    = data.token;
+    authUsername = data.username;
+    sessionStorage.setItem("med_token",    authToken);
+    sessionStorage.setItem("med_username", authUsername);
+    showToast("🎉 Account created! Welcome, " + username);
+    await enterApp();
+  } catch(e) {
+    showAuthError("register-error", e.message);
+    btn.disabled = false; btn.textContent = "Create Account";
+  }
+}
+
+function doLogout(silent = false) {
+  if (!silent) {
+    fetch(API_BASE + "/auth/logout", {
+      method:"POST", headers:{"Authorization":"Bearer " + authToken}
+    }).catch(() => {});
+  }
+  authToken = authUsername = null;
+  sessionStorage.removeItem("med_token");
+  sessionStorage.removeItem("med_username");
+  profiles = []; currentProfile = null; allMedicines = []; allVitals = [];
+  showScreen("login-screen");
+  if (!silent) showToast("You have been logged out");
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// App entry
+// ─────────────────────────────────────────────────────────────────────────────
+async function enterApp() {
+  showScreen("app-screen");
+  document.getElementById("user-badge").textContent = "👤 " + authUsername;
+
+  try {
+    await fetch(API_BASE + "/reminders/check", {headers:{"Authorization":"Bearer " + authToken}});
+    document.getElementById("backend-dot").className   = "inline-block w-2 h-2 rounded-full bg-green-500";
+    document.getElementById("backend-label").textContent = "Connected ✓";
+  } catch {
+    document.getElementById("backend-dot").className   = "inline-block w-2 h-2 rounded-full bg-red-500";
+    document.getElementById("backend-label").textContent = "Backend offline";
+  }
+
+  try {
+    const th = await api("/vitals/thresholds");
+    Object.assign(THRESHOLDS, th);
+    buildThresholdTable();
+  } catch {}
+
+  await loadProfiles();
+  if (profiles.length === 0) showSubScreen("profile-screen");
+  else showProfileSelection();
+  checkNotificationPermission();
+
+  // Apply saved language
+  if (currentLang !== "en") setTimeout(() => translatePage(), 500);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Boot
+// ─────────────────────────────────────────────────────────────────────────────
+window.addEventListener("load", async () => {
+  // Set language selector to saved value
+  document.getElementById("ui-lang").value = currentLang;
+
+  if (authToken) {
+    showLoading(true);
+    try {
+      const me = await fetch(API_BASE + "/auth/me", {
+        headers:{"Authorization":"Bearer " + authToken}
+      });
+      if (me.ok) {
+        const u = await me.json();
+        authUsername = u.username;
+        sessionStorage.setItem("med_username", authUsername);
+        showLoading(false);
+        await enterApp();
+        setInterval(checkReminders, 60000);
+        checkReminders();
+        return;
+      }
+    } catch {}
+    showLoading(false);
+    doLogout(true);
+  }
+  showScreen("login-screen");
+  setInterval(checkReminders, 60000);
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Profiles
+// ─────────────────────────────────────────────────────────────────────────────
+async function loadProfiles() {
+  try { const d = await api("/profiles"); profiles = d.profiles || []; }
+  catch { profiles = []; }
+}
+function showProfileSelection() {
+  showSubScreen("profile-screen");
+  const list = document.getElementById("profile-list");
+  list.innerHTML = profiles.length === 0
+    ? `<p class="text-gray-400 text-sm">No profiles yet.</p>`
+    : profiles.map(p => `
+        <button onclick="selectProfile('${p.id}')"
+          class="w-full bg-gradient-to-r from-gray-50 to-gray-100 hover:from-gray-100 hover:to-gray-200 p-4 rounded-xl flex items-center gap-4 transition-all">
+          <div class="p-3 rounded-lg" style="background-color:${p.color}">
+            <svg class="text-white w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+          </div>
+          <span class="text-lg font-semibold text-gray-800">${p.name}</span>
+        </button>`).join("");
+}
+function showAddProfile() {
+  showSubScreen("add-profile-screen");
+  document.getElementById("profile-name").value = "";
+  selectedColor = "#8B5CF6";
+}
+function selectColor(c) { selectedColor = c; }
+async function saveProfile() {
+  const name = document.getElementById("profile-name").value.trim();
+  if (!name) { showToast("Enter a name"); return; }
+  try {
+    const d = await api("/profiles", {method:"POST", body:{name, color:selectedColor}});
+    profiles.push(d.profile);
+    selectProfile(d.profile.id);
+  } catch(e) { showToast("❌ " + e.message); }
+}
+function cancelAddProfile() {
+  profiles.length ? showProfileSelection() : showToast("Create at least one profile");
+}
+async function selectProfile(id) {
+  currentProfile = profiles.find(p => p.id === id);
+  if (!currentProfile) return;
+  showSubScreen("main-screen");
+  document.getElementById("profile-avatar").style.backgroundColor = currentProfile.color;
+  document.getElementById("profile-subtitle").textContent = `${currentProfile.name}'s Health`;
+  switchTab("medicines");
+  await renderMedicines();
+  checkNotificationPermission();
+}
+function switchProfile() { showProfileSelection(); }
+async function manageProfiles() {
+  showSubScreen("manage-screen");
+  document.getElementById("manage-profile-list").innerHTML = profiles.map(p => `
+    <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+      <div class="flex items-center gap-3">
+        <div class="p-2 rounded-lg" style="background-color:${p.color}">
+          <svg class="text-white w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+        </div>
+        <span class="font-medium text-gray-800">${p.name}</span>
+      </div>
+      <button onclick="deleteProfile('${p.id}')" class="text-red-600 hover:bg-red-50 p-2 rounded-lg">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+      </button>
+    </div>`).join("");
+}
+async function deleteProfile(id) {
+  if (profiles.length === 1) { showToast("Cannot delete last profile"); return; }
+  if (!confirm("Delete this profile and all its data?")) return;
+  try {
+    await api(`/profiles/${id}`, {method:"DELETE"});
+    profiles = profiles.filter(p => p.id !== id);
+    if (currentProfile?.id === id) await selectProfile(profiles[0].id);
+    else manageProfiles();
+    showToast("Profile deleted");
+  } catch(e) { showToast("❌ " + e.message); }
+}
+function backToMain() { showSubScreen("main-screen"); }
+
+// Change password
+function showChangePassword() {
+  showSubScreen("change-pw-screen");
+  ["cpw-old","cpw-new","cpw-confirm"].forEach(id => document.getElementById(id).value = "");
+  document.getElementById("cpw-error").classList.remove("show");
+}
+async function submitChangePassword() {
+  const old_password = document.getElementById("cpw-old").value;
+  const new_password = document.getElementById("cpw-new").value;
+  const confirm      = document.getElementById("cpw-confirm").value;
+  if (new_password !== confirm) {
+    document.getElementById("cpw-error").textContent = "New passwords don't match";
+    document.getElementById("cpw-error").classList.add("show"); return;
+  }
+  try {
+    await api("/auth/change-password", {method:"POST", body:{old_password, new_password}});
+    showToast("✅ Password updated!");
+    backToMain();
+  } catch(e) {
+    document.getElementById("cpw-error").textContent = e.message;
+    document.getElementById("cpw-error").classList.add("show");
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Medicines
+// ─────────────────────────────────────────────────────────────────────────────
+function toggleAddForm() {
+  const f = document.getElementById("add-form");
+  const hidden = f.style.display === "none";
+  f.style.display = hidden ? "block" : "none";
+  document.getElementById("add-med-btn").style.display = hidden ? "none" : "flex";
+  if (hidden) {
+    document.getElementById("med-name").value   = "";
+    document.getElementById("med-dosage").value = "";
+    times = ["09:00"]; renderTimeSlots();
+  }
+}
+function renderTimeSlots() {
+  document.getElementById("time-slots").innerHTML = times.map((t, i) => `
+    <div class="flex gap-2 mb-2">
+      <input type="time" value="${t}" onchange="updateTime(${i},this.value)"
+        class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+      ${times.length > 1 ? `<button onclick="removeTime(${i})" class="px-3 text-red-500 hover:bg-red-50 rounded-lg">🗑️</button>` : ""}
+    </div>`).join("");
+}
+function addTimeSlot()    { times.push("09:00"); renderTimeSlots(); }
+function updateTime(i, v) { times[i] = v; }
+function removeTime(i)    { times = times.filter((_,j) => j !== i); renderTimeSlots(); }
+
+async function saveMedicine() {
+  const name   = document.getElementById("med-name").value.trim();
+  const dosage = document.getElementById("med-dosage").value.trim();
+  if (!name || !dosage) { showToast("Fill in name and dosage"); return; }
+  try {
+    await api(`/profiles/${currentProfile.id}/medicines`, {method:"POST", body:{name,dosage,times:[...times]}});
+    showToast("💊 Medicine saved!");
+    toggleAddForm();
+    await renderMedicines();
+  } catch(e) { showToast("❌ " + e.message); }
+}
+async function deleteMedicine(id) {
+  if (!confirm("Delete this medicine?")) return;
+  try {
+    await api(`/medicines/${id}`, {method:"DELETE"});
+    showToast("Deleted"); await renderMedicines();
+  } catch(e) { showToast("❌ " + e.message); }
+}
+async function renderMedicines() {
+  const c = document.getElementById("medicine-list");
+  c.innerHTML = `<p class="text-center text-gray-400 py-4 text-sm">Loading…</p>`;
+  try {
+    const d = await api(`/profiles/${currentProfile.id}/medicines`);
+    allMedicines = d.medicines || [];
+    if (!allMedicines.length) {
+      c.innerHTML = `<div class="bg-white rounded-2xl shadow p-10 text-center">
+        <p class="text-gray-400">No medicines yet.</p><p class="text-sm text-gray-300 mt-1">Tap "Add Medicine" above.</p></div>`;
+      return;
+    }
+    c.innerHTML = allMedicines.map(m => `
+      <div class="bg-white rounded-2xl shadow-lg p-5 mb-3">
+        <div class="flex justify-between items-start mb-3">
+          <div>
+            <h3 class="text-base font-bold text-gray-800">${m.name}</h3>
+            <p class="text-sm text-gray-500">${m.dosage}</p>
+          </div>
+          <div class="flex gap-2">
+            <button onclick="openAnalyticsFor(${m.id})" class="text-indigo-600 hover:bg-indigo-50 p-2 rounded-lg" title="Analytics">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+            </button>
+            <button onclick="deleteMedicine(${m.id})" class="text-red-500 hover:bg-red-50 p-2 rounded-lg">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          ${(m.times||[]).map(t => `
+            <div class="flex items-center gap-1 bg-indigo-50 text-indigo-700 px-3 py-1 rounded-lg text-sm">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              ${t}
+            </div>`).join("")}
+        </div>
+      </div>`).join("");
+  } catch { c.innerHTML = `<p class="text-center text-red-400 py-4 text-sm">Cannot load — is backend running?</p>`; }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Today tab
+// ─────────────────────────────────────────────────────────────────────────────
+async function renderToday() {
+  const now   = new Date();
+  const today = now.toISOString().slice(0,10);
+  document.getElementById("today-date").textContent =
+    now.toLocaleDateString("en-IN",{weekday:"long",year:"numeric",month:"long",day:"numeric"});
+  const c = document.getElementById("today-list");
+  c.innerHTML = `<p class="text-center text-gray-400 py-4 text-sm">Loading…</p>`;
+  try {
+    const d = await api(`/profiles/${currentProfile.id}/medicines`);
+    allMedicines = d.medicines || [];
+    if (!allMedicines.length) {
+      c.innerHTML = `<div class="bg-white rounded-2xl shadow p-10 text-center text-gray-400">No medicines added yet.</div>`; return;
+    }
+    c.innerHTML = allMedicines.map(m => `
+      <div class="bg-white rounded-2xl shadow-lg p-5 mb-3">
+        <div class="mb-3">
+          <h3 class="text-base font-bold text-gray-800">${m.name}</h3>
+          <p class="text-sm text-gray-500">${m.dosage}</p>
+        </div>
+        <div class="space-y-2">
+          ${(m.times||[]).map(t => `
+            <div class="flex items-center justify-between bg-gray-50 px-4 py-2 rounded-lg">
+              <span class="text-sm font-medium text-gray-700">⏰ ${t}</span>
+              <div class="flex gap-2">
+                <button class="dose-btn dose-take" id="btn-taken-${m.id}-${t.replace(':','')}"
+                  onclick="logDose(${m.id},'${t}','${today}','taken')">✓ Taken</button>
+                <button class="dose-btn dose-skipped" id="btn-skip-${m.id}-${t.replace(':','')}"
+                  onclick="logDose(${m.id},'${t}','${today}','skipped')">✗ Skip</button>
+              </div>
+            </div>`).join("")}
+        </div>
+      </div>`).join("");
+  } catch { c.innerHTML = `<p class="text-center text-red-400 py-4 text-sm">Cannot load — is backend running?</p>`; }
+}
+async function logDose(medId, time, date, status) {
+  try {
+    await api(`/medicines/${medId}/log`, {
+      method:"POST",
+      body:{profile_id:currentProfile.id, log_date:date, log_time:time, status}
+    });
+    const key = time.replace(":","");
+    document.getElementById(`btn-taken-${medId}-${key}`)?.classList.toggle("active", status==="taken");
+    document.getElementById(`btn-skip-${medId}-${key}`)?.classList.toggle("active",  status==="skipped");
+    showToast(status === "taken" ? "✅ Marked as taken!" : "⏭ Marked as skipped");
+  } catch(e) { showToast("❌ " + e.message); }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Analytics tab
+// ─────────────────────────────────────────────────────────────────────────────
+function renderAnalyticsMedList() {
+  const sel = document.getElementById("analytics-med-selector");
+  document.getElementById("analytics-panel").style.display = "none";
+  if (!allMedicines.length) {
+    sel.innerHTML = `<div class="bg-white rounded-2xl shadow p-8 text-center text-gray-400">No medicines added yet.</div>`; return;
+  }
+  sel.innerHTML = allMedicines.map(m => `
+    <button onclick="loadAnalytics(${m.id})"
+      class="w-full bg-white rounded-xl shadow p-4 flex items-center justify-between hover:bg-indigo-50 transition-colors">
+      <div class="text-left">
+        <p class="font-semibold text-gray-800">${m.name}</p>
+        <p class="text-sm text-gray-500">${m.dosage}</p>
+      </div>
+      <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+    </button>`).join("");
+}
+function openAnalyticsFor(medId) {
+  const med = allMedicines.find(m => m.id === medId);
+  if (!med) return;
+  switchTab("analytics");
+  loadAnalytics(medId);
+}
+async function loadAnalytics(medId) {
+  document.getElementById("analytics-panel").style.display = "block";
+  document.getElementById("analytics-panel").innerHTML = `<p class="text-center text-gray-400 py-6">Loading analytics…</p>`;
+  try {
+    const d = await api(`/medicines/${medId}/analytics?days=30`);
+    renderAnalyticsPanel(d);
+  } catch(e) {
+    document.getElementById("analytics-panel").innerHTML = `<p class="text-red-400 text-center py-6">${e.message}</p>`;
+  }
+}
+function renderAnalyticsPanel(d) {
+  const pct    = d.adherence_pct;
+  const offset = 283 - (283 * pct / 100);
+  const color  = pct >= 80 ? "#059669" : pct >= 50 ? "#d97706" : "#dc2626";
+  document.getElementById("analytics-panel").innerHTML = `
+    <div class="bg-white rounded-2xl shadow-lg p-5">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h3 class="text-lg font-bold text-gray-800">${d.med_name}</h3>
+          <p class="text-sm text-gray-500">${d.med_dosage} · Last 30 days</p>
+        </div>
+        <div class="relative w-20 h-20">
+          <svg viewBox="0 0 100 100" class="w-20 h-20 -rotate-90">
+            <circle cx="50" cy="50" r="45" fill="none" stroke="#e5e7eb" stroke-width="10"/>
+            <circle cx="50" cy="50" r="45" fill="none" stroke="${color}" stroke-width="10"
+              stroke-dasharray="283" stroke-dashoffset="${offset}" stroke-linecap="round"/>
+          </svg>
+          <div class="absolute inset-0 flex items-center justify-center">
+            <span class="text-base font-bold" style="color:${color}">${pct}%</span>
+          </div>
+        </div>
+      </div>
+      <div class="grid grid-cols-3 gap-3 mb-4">
+        <div class="bg-green-50 rounded-xl p-3 text-center">
+          <p class="text-2xl font-bold text-green-700">${d.total_taken}</p>
+          <p class="text-xs text-green-600 mt-1">Taken</p>
+        </div>
+        <div class="bg-red-50 rounded-xl p-3 text-center">
+          <p class="text-2xl font-bold text-red-600">${d.total_skipped}</p>
+          <p class="text-xs text-red-500 mt-1">Skipped</p>
+        </div>
+        <div class="bg-indigo-50 rounded-xl p-3 text-center">
+          <p class="text-2xl font-bold text-indigo-600">${d.streak_days}</p>
+          <p class="text-xs text-indigo-500 mt-1">Streak 🔥</p>
+        </div>
+      </div>
+      <div class="mb-2">
+        <div class="flex justify-between text-xs text-gray-500 mb-1"><span>Adherence</span><span>${pct}%</span></div>
+        <div class="w-full bg-gray-100 rounded-full h-3">
+          <div class="h-3 rounded-full" style="width:${pct}%;background:${color}"></div>
+        </div>
+      </div>
+    </div>
+    <div class="bg-white rounded-2xl shadow-lg p-5">
+      <h3 class="text-sm font-semibold text-gray-700 mb-3">Daily Adherence (last 14 days)</h3>
+      <canvas id="adherence-chart"></canvas>
+    </div>
+    <div class="bg-white rounded-2xl shadow-lg p-5">
+      <h3 class="text-sm font-semibold text-gray-700 mb-3">Calendar View (30 days)</h3>
+      <div class="grid grid-cols-7 gap-1" id="cal-grid"></div>
+      <div class="flex gap-4 mt-3 text-xs text-gray-500">
+        <span><span class="inline-block w-3 h-3 rounded bg-green-500 mr-1"></span>All taken</span>
+        <span><span class="inline-block w-3 h-3 rounded bg-red-400 mr-1"></span>Some skipped</span>
+        <span><span class="inline-block w-3 h-3 rounded bg-gray-200 mr-1"></span>Not logged</span>
+      </div>
+    </div>`;
+
+  if (adherenceChart) adherenceChart.destroy();
+  adherenceChart = new Chart(document.getElementById("adherence-chart"), {
+    type:"bar",
+    data:{
+      labels: d.daily.slice(-14).map(x => x.date.slice(5)),
+      datasets:[
+        {label:"Taken",    data:d.daily.slice(-14).map(x=>x.taken),    backgroundColor:"#4F46E5"},
+        {label:"Skipped",  data:d.daily.slice(-14).map(x=>x.skipped),  backgroundColor:"#ef4444"},
+        {label:"Unlogged", data:d.daily.slice(-14).map(x=>x.unlogged), backgroundColor:"#e5e7eb"}
+      ]
+    },
+    options:{responsive:true,plugins:{legend:{position:"bottom"}},
+      scales:{x:{stacked:true},y:{stacked:true,ticks:{stepSize:1}}}}
+  });
+
+  document.getElementById("cal-grid").innerHTML = d.daily.map(day => {
+    let cls = "bg-gray-200";
+    if (day.expected > 0) {
+      if (day.taken === day.expected)    cls = "bg-green-500";
+      else if (day.skipped > 0)         cls = "bg-red-400";
+      else if (day.taken > 0)           cls = "bg-green-300";
+    }
+    return `<div class="${cls} rounded w-full aspect-square flex items-center justify-center text-xs font-bold text-white"
+      title="${day.date}: ${day.taken} taken, ${day.skipped} skipped">${day.date.slice(8)}</div>`;
+  }).join("");
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Vitals tab
+// ─────────────────────────────────────────────────────────────────────────────
+function onVitalMetricChange() {
+  const metric = document.getElementById("vital-metric").value;
+  const hint   = document.getElementById("vital-threshold-hint");
+  if (!metric || !THRESHOLDS[metric]) { hint.classList.add("hidden"); return; }
+  const t = THRESHOLDS[metric];
+  let text = `Normal: `;
+  if (t.low !== null && t.high !== null) text += `${t.low}–${t.high} ${t.unit}`;
+  else if (t.high !== null) text += `< ${t.high} ${t.unit}`;
+  else if (t.low  !== null) text += `> ${t.low} ${t.unit}`;
+  else text += "No threshold defined";
+  hint.textContent = text;
+  hint.classList.remove("hidden");
+}
+async function saveVital() {
+  const metric = document.getElementById("vital-metric").value;
+  const value  = parseFloat(document.getElementById("vital-value").value);
+  const notes  = document.getElementById("vital-notes").value.trim();
+  if (!metric) { showToast("Select a metric"); return; }
+  if (isNaN(value)) { showToast("Enter a valid number"); return; }
+  try {
+    await api(`/profiles/${currentProfile.id}/vitals`, {method:"POST", body:{metric,value,notes}});
+    showToast("✅ Vital logged!");
+    document.getElementById("vital-value").value  = "";
+    document.getElementById("vital-notes").value  = "";
+    document.getElementById("vital-metric").value = "";
+    document.getElementById("vital-threshold-hint").classList.add("hidden");
+    await loadAndRenderVitals();
+  } catch(e) { showToast("❌ " + e.message); }
+}
+async function loadAndRenderVitals() {
+  try {
+    const d = await api(`/profiles/${currentProfile.id}/vitals?days=30`);
+    allVitals = d.vitals || [];
+    filterVitals();
+  } catch { allVitals = []; }
+}
+function filterVitals() {
+  const filter = document.getElementById("vitals-filter").value;
+  const list   = document.getElementById("vitals-list");
+  const shown  = filter ? allVitals.filter(v => v.metric === filter) : allVitals;
+  if (!shown.length) {
+    list.innerHTML = `<p class="text-gray-400 text-sm text-center py-4">No readings yet.</p>`;
+    document.getElementById("vitals-chart-card").style.display = "none"; return;
+  }
+  list.innerHTML = shown.slice(0,20).map(v => {
+    const badge = v.status === "normal"
+      ? `<span class="text-xs px-2 py-0.5 rounded-full status-normal font-medium">Normal</span>`
+      : v.status === "high"
+      ? `<span class="text-xs px-2 py-0.5 rounded-full status-high font-medium">⚠ High</span>`
+      : `<span class="text-xs px-2 py-0.5 rounded-full status-low font-medium">⚠ Low</span>`;
+    const ts = new Date(v.recorded_at).toLocaleString("en-IN",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"});
+    return `
+      <div class="vital-card ${v.status} bg-gray-50 rounded-xl px-4 py-3 mb-2 flex items-center justify-between">
+        <div>
+          <p class="text-sm font-semibold text-gray-800">${v.label}</p>
+          <p class="text-xs text-gray-500">${ts}${v.notes?" · "+v.notes:""}</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-base font-bold text-gray-800">${v.value} <span class="text-xs font-normal text-gray-500">${v.unit}</span></span>
+          ${badge}
+          <button onclick="deleteVital(${v.id})" class="text-gray-300 hover:text-red-400 ml-1 text-lg leading-none">×</button>
+        </div>
+      </div>`;
+  }).join("");
+
+  if (filter && shown.length > 1) {
+    document.getElementById("vitals-chart-card").style.display = "block";
+    document.getElementById("vitals-chart-title").textContent = (THRESHOLDS[filter]?.label || filter) + " Trend";
+    const pts    = shown.slice(0,20).reverse();
+    const labels = pts.map(v => new Date(v.recorded_at).toLocaleString("en-IN",{day:"2-digit",month:"short"}));
+    const vals   = pts.map(v => v.value);
+    const thresh = THRESHOLDS[filter] || {};
+    if (vitalsChartObj) vitalsChartObj.destroy();
+    vitalsChartObj = new Chart(document.getElementById("vitals-chart"), {
+      type:"line",
+      data:{labels, datasets:[{label:thresh.label||filter, data:vals,
+        borderColor:"#4F46E5", backgroundColor:"rgba(79,70,229,.1)",
+        tension:.3, fill:true, pointRadius:4}]},
+      options:{responsive:true, plugins:{legend:{display:false}},
+        scales:{y:{suggestedMin:thresh.low?thresh.low*.85:undefined,
+                   suggestedMax:thresh.high?thresh.high*1.15:undefined}}}
+    });
+  } else {
+    document.getElementById("vitals-chart-card").style.display = "none";
+  }
+}
+async function deleteVital(id) {
+  if (!confirm("Delete this reading?")) return;
+  try {
+    await api(`/vitals/${id}`, {method:"DELETE"});
+    showToast("Deleted"); await loadAndRenderVitals();
+  } catch(e) { showToast("❌ " + e.message); }
+}
+function buildThresholdTable() {
+  const tbl = document.getElementById("threshold-table");
+  if (!tbl || !Object.keys(THRESHOLDS).length) return;
+  tbl.innerHTML = Object.entries(THRESHOLDS).map(([k, t]) => {
+    let range = t.low !== null && t.high !== null ? `${t.low}–${t.high} ${t.unit}`
+              : t.high !== null ? `< ${t.high} ${t.unit}`
+              : t.low  !== null ? `> ${t.low} ${t.unit}` : "—";
+    return `<div class="flex items-center justify-between py-1.5 border-b border-gray-100 last:border-0">
+      <span class="text-sm text-gray-700">${t.label}</span>
+      <span class="text-sm font-medium text-indigo-700">${range}</span></div>`;
+  }).join("");
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Alarm
+// ─────────────────────────────────────────────────────────────────────────────
+let audioCtx = null;
+let alarmInterval = null;
+let alarmRinging = false;
+
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+function playAlarmBeep() {
+  const ctx = getAudioCtx();
+  const pattern = [
+    {freq:880,  start:0.0,  dur:0.18},
+    {freq:1100, start:0.22, dur:0.18},
+    {freq:1320, start:0.44, dur:0.28},
+  ];
+  pattern.forEach(p => {
+    const osc  = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(p.freq, ctx.currentTime + p.start);
+    gain.gain.setValueAtTime(0.0, ctx.currentTime + p.start);
+    gain.gain.linearRampToValueAtTime(0.7, ctx.currentTime + p.start + 0.03);
+    gain.gain.linearRampToValueAtTime(0.0, ctx.currentTime + p.start + p.dur);
+    osc.start(ctx.currentTime + p.start);
+    osc.stop(ctx.currentTime + p.start + p.dur + 0.05);
+  });
+}
+function startAlarm(medName, dosage) {
+  if (alarmRinging) return;
+  alarmRinging = true;
+  document.getElementById("alarm-med-name").textContent   = medName;
+  document.getElementById("alarm-med-dosage").textContent = dosage;
+  document.getElementById("alarm-overlay").style.display  = "flex";
+  playAlarmBeep();
+  alarmInterval = setInterval(playAlarmBeep, 4000);
+}
+function stopAlarm() {
+  alarmRinging = false;
+  clearInterval(alarmInterval); alarmInterval = null;
+  document.getElementById("alarm-overlay").style.display = "none";
+}
+function snoozeAlarm() {
+  stopAlarm();
+  showToast("⏰ Snoozed for 5 minutes");
+  const name   = document.getElementById("alarm-med-name").textContent;
+  const dosage = document.getElementById("alarm-med-dosage").textContent;
+  setTimeout(() => startAlarm(name, dosage), 5 * 60 * 1000);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Notifications
+// ─────────────────────────────────────────────────────────────────────────────
+function checkNotificationPermission() {
+  if (!("Notification" in window)) return;
+  const b = document.getElementById("notif-banner");
+  b.style.display = Notification.permission !== "granted" ? "block" : "none";
+}
+function requestNotifications() {
+  if (audioCtx && audioCtx.state === "suspended") audioCtx.resume();
+  getAudioCtx();
+  Notification.requestPermission().then(p => {
+    if (p === "granted") new Notification("✅ Enabled!", {body:"You will receive medicine reminders"});
+    checkNotificationPermission();
+  });
+}
+
+const _firedThisMinute = new Set();
+
+async function checkReminders() {
+  if (!authToken) return;
+  try {
+    const d = await fetch(API_BASE + "/reminders/check", {
+      headers:{"Authorization":"Bearer " + authToken}
+    }).then(r => r.json());
+
+    const currentMinute = new Date().toISOString().slice(0, 16);
+    (d.due || []).forEach(m => {
+      const key = `${m.id}-${currentMinute}`;
+      if (_firedThisMinute.has(key)) return;
+      _firedThisMinute.add(key);
+      if (_firedThisMinute.size > 100) {
+        const first = _firedThisMinute.values().next().value;
+        _firedThisMinute.delete(first);
+      }
+      if ("Notification" in window && Notification.permission === "granted") {
+        const n = new Notification("💊 Medicine Alarm — Time to take your medicine!", {
+          body: `${m.name} — ${m.dosage}`,
+          requireInteraction: true, tag: key
+        });
+        setTimeout(() => n.close(), 60000);
+      }
+      startAlarm(m.name, m.dosage);
+    });
+  } catch {}
+}
+</script>
+</body>
+</html>
