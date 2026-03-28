@@ -349,6 +349,19 @@ def check_reminders():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+# ── Public cron endpoint (no auth required) ───────────────────────────────────
+CRON_SECRET = "doseping2026"
+
+@app.route("/api/cron/check", methods=["GET"])
+def cron_check_reminders():
+    token = request.args.get("token")
+    if token != CRON_SECRET:
+        return jsonify({"error": "Unauthorized"}), 401
+    try:
+        now = datetime.now().strftime("%H:%M")
+        return jsonify({"status": "ok", "time": now})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 # ── Health check (for Render/Railway) ────────────────────────────────────────
 @app.route("/health")
