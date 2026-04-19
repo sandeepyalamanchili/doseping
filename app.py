@@ -51,7 +51,7 @@ def require_auth(f):
 # ── Frontend ──────────────────────────────────────────────────────────────────
 @app.route("/")
 def index():
-    return app.send_static_file("index.html")
+    return jsonify({"status":"api only"})
  
  
 # ── Auth endpoints (NO token required) ───────────────────────────────────────
