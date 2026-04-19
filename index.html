@@ -1263,6 +1263,7 @@ async function loginSubmit() {
     const data=await api("/auth/login",{method:"POST",body:{username,password}});
     authToken=data.token; authUsername=data.username;
     sessionStorage.setItem("med_token",authToken); sessionStorage.setItem("med_username",authUsername);
+    sendTokenToSW(data.token);
     await enterApp();
   } catch(e) { showAuthError("login-error",e.message); }
   finally { btn.disabled=false; btn.textContent="Sign In"; }
@@ -1278,6 +1279,7 @@ async function registerSubmit() {
     const data=await api("/auth/register",{method:"POST",body:{username,password,email}});
     authToken=data.token; authUsername=data.username;
     sessionStorage.setItem("med_token",authToken); sessionStorage.setItem("med_username",authUsername);
+    sendTokenToSW(data.token);
     showToast("🎉 Welcome, "+username+"!"); await enterApp();
   } catch(e) { showAuthError("register-error",e.message); btn.disabled=false; btn.textContent="Create Account"; }
 }
@@ -1285,12 +1287,25 @@ function doLogout(silent=false) {
   if (!silent) fetch(API_BASE+"/auth/logout",{method:"POST",headers:{"Authorization":"Bearer "+authToken}}).catch(()=>{});
   authToken=authUsername=null;
   sessionStorage.removeItem("med_token"); sessionStorage.removeItem("med_username");
+  if ("serviceWorker" in navigator && navigator.serviceWorker.controller) {
+    navigator.serviceWorker.controller.postMessage({type:"STOP_REMINDERS"});
+  }
   profiles=[]; currentProfile=null; allMedicines=[]; allVitals=[];
   showScreen("login-screen");
   if (!silent) showToast("Logged out");
 }
 
 // ─── Boot ──────────────────────────────────────────────────────────────────
+// ─── Service Worker helpers ────────────────────────────────────────────────
+function sendTokenToSW(token) {
+  if (!("serviceWorker" in navigator)) return;
+  navigator.serviceWorker.ready.then(reg => {
+    if (reg.active) {
+      reg.active.postMessage({ type: "START_REMINDERS", token });
+    }
+  });
+}
+
 window.addEventListener("load", async () => {
   // Wake up Render backend (free tier sleeps after 15 min)
   fetch("https://doseping.onrender.com/health").catch(()=>{});
@@ -1301,6 +1316,21 @@ window.addEventListener("load", async () => {
     if (audioCtx && audioCtx.state === "suspended") audioCtx.resume();
   }, { once: true });
   document.getElementById("ui-lang").value = currentLang;
+
+  // Register Service Worker FIRST (before any return statements)
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("/sw.js").then(reg => {
+      console.log("SW registered:", reg.scope);
+    }).catch(err => console.log("SW failed:", err));
+
+    // Listen for alarm messages from SW (tab was in background)
+    navigator.serviceWorker.addEventListener("message", e => {
+      if (e.data?.type === "ALARM" && e.data.med) {
+        startAlarm(e.data.med.name, e.data.med.dosage);
+      }
+    });
+  }
+
   if (authToken) {
     showLoading(true);
     try {
@@ -1308,6 +1338,7 @@ window.addEventListener("load", async () => {
       if (me.ok) {
         const u=await me.json(); authUsername=u.username;
         sessionStorage.setItem("med_username",authUsername);
+        sendTokenToSW(authToken);
         showLoading(false); await enterApp();
         setInterval(checkReminders,60000); checkReminders(); return;
       }
