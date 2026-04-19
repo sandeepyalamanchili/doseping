@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DosePing — Debug</title>
+  <style>
+    body { font-family: monospace; background: #0a0a0f; color: #f0f0f5; padding: 1.5rem; }
+    h2 { color: #a594ff; margin-bottom: 1rem; }
+    .check { padding: .5rem .75rem; margin: .4rem 0; border-radius: 8px; font-size: .85rem; }
+    .ok   { background: rgba(34,197,94,.12);  color: #22c55e; border: 1px solid rgba(34,197,94,.25); }
+    .fail { background: rgba(239,68,68,.12);  color: #ef4444; border: 1px solid rgba(239,68,68,.25); }
+    .warn { background: rgba(245,158,11,.12); color: #f59e0b; border: 1px solid rgba(245,158,11,.25); }
+    .info { background: rgba(124,106,247,.1); color: #a594ff; border: 1px solid rgba(124,106,247,.2); }
+    button { background: #7c6af7; color: #fff; border: none; border-radius: 8px; padding: .6rem 1.2rem; font-size: .85rem; cursor: pointer; margin: .35rem .35rem 0 0; }
+    button:hover { background: #a594ff; }
+    #log { margin-top: 1.5rem; }
+    input { background: #18181f; border: 1px solid rgba(255,255,255,.12); color: #f0f0f5; border-radius: 8px; padding: .5rem .75rem; font-family: monospace; font-size: .82rem; width: 100%; margin-top: .35rem; }
+  </style>
+</head>
+<body>
+<h2>🔧 DosePing Debug Panel</h2>
+
+<div id="log"></div>
+
+<div style="margin-top:1.5rem;display:flex;flex-wrap:wrap;gap:.5rem">
+  <button onclick="runAll()">▶ Run All Checks</button>
+  <button onclick="testNotification()">🔔 Test Notification</button>
+  <button onclick="testAlarm()">🔊 Test Alarm Sound</button>
+  <button onclick="testBackend()">🌐 Test Backend</button>
+  <button onclick="requestNotifPerm()">📋 Request Permission</button>
+  <button onclick="checkSW()">⚙️ Check Service Worker</button>
+  <button onclick="forceAlarm()">🚨 Force Alarm Now</button>
+</div>
+
+<div style="margin-top:1.5rem">
+  <label style="font-size:.8rem;color:#8888a0">Auth Token (from sessionStorage):</label>
+  <input id="token-display" readonly placeholder="Not logged in">
+  <label style="font-size:.8rem;color:#8888a0;margin-top:.75rem;display:block">Test: Set medicine time to current minute (HH:MM):</label>
+  <input id="current-time" readonly>
+</div>
+
+<script>
+const API = "https://doseping.onrender.com/api";
+const log = document.getElementById("log");
+
+function add(msg, type="info") {
+  const d = document.createElement("div");
+  d.className = "check " + type;
+  d.textContent = msg;
+  log.appendChild(d);
+}
+function clear() { log.innerHTML = ""; }
+
+async function runAll() {
+  clear();
+  add("── Running all checks ──────────────────────");
+
+  // 1. Notification API
+  if (!("Notification" in window)) { add("❌ Notifications API: NOT supported in this browser", "fail"); }
+  else {
+    const p = Notification.permission;
+    if (p === "granted")  add("✅ Notification permission: GRANTED", "ok");
+    else if (p === "denied") add("❌ Notification permission: DENIED — go to browser settings and allow it", "fail");
+    else add("⚠️ Notification permission: NOT YET ASKED — click 'Request Permission'", "warn");
+  }
+
+  // 2. Service Worker
+  if (!("serviceWorker" in navigator)) { add("❌ Service Worker: NOT supported", "fail"); }
+  else {
+    const reg = await navigator.serviceWorker.getRegistration("/");
+    if (reg) {
+      add("✅ Service Worker: registered at " + reg.scope, "ok");
+      const state = reg.active ? "active" : reg.installing ? "installing" : reg.waiting ? "waiting" : "unknown";
+      add("   SW state: " + state, reg.active ? "ok" : "warn");
+    } else {
+      add("❌ Service Worker: NOT registered — sw.js may not be at root of your Vercel deploy", "fail");
+    }
+  }
+
+  // 3. Auth token
+  const token = sessionStorage.getItem("med_token");
+  document.getElementById("token-display").value = token || "";
+  if (token) add("✅ Auth token found in sessionStorage", "ok");
+  else add("❌ No auth token — you are not logged in on this browser tab", "fail");
+
+  // 4. Backend health
+  add("⏳ Checking backend...", "info");
+  try {
+    const r = await fetch("https://doseping.onrender.com/health");
+    const d = await r.json();
+    add("✅ Backend: online — " + JSON.stringify(d), "ok");
+  } catch(e) {
+    add("❌ Backend: OFFLINE or sleeping — " + e.message, "fail");
+  }
+
+  // 5. Reminder check
+  if (token) {
+    try {
+      const r = await fetch(API + "/reminders/check", { headers: { "Authorization": "Bearer " + token } });
+      const d = await r.json();
+      add("✅ Reminder check: responded — current time " + d.time, "ok");
+      if (d.due && d.due.length > 0) {
+        add("🔔 DUE NOW: " + d.due.map(m => m.name + " @ " + m.times).join(", "), "ok");
+      } else {
+        add("ℹ️ No medicines due at " + d.time + " — set a medicine time to the current minute to test", "warn");
+      }
+    } catch(e) {
+      add("❌ Reminder check failed: " + e.message, "fail");
+    }
+  }
+
+  // 6. Current time
+  const now = new Date().toTimeString().slice(0,5);
+  document.getElementById("current-time").value = now;
+  add("ℹ️ Current time: " + now + " — your medicine must be set to this exact time to trigger", "info");
+
+  // 7. Audio context
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    add("✅ Audio context: " + ctx.state, ctx.state === "running" ? "ok" : "warn");
+    if (ctx.state === "suspended") add("⚠️ Audio suspended — tap anywhere on the page first to unlock", "warn");
+    ctx.close();
+  } catch(e) {
+    add("❌ Audio context failed: " + e.message, "fail");
+  }
+}
+
+async function testNotification() {
+  if (Notification.permission !== "granted") {
+    add("⚠️ Permission not granted — requesting now...", "warn");
+    await Notification.requestPermission();
+  }
+  if (Notification.permission === "granted") {
+    const reg = await navigator.serviceWorker.getRegistration("/");
+    if (reg) {
+      await reg.showNotification("💊 Test — DosePing", {
+        body: "This is a test notification from DosePing",
+        requireInteraction: true,
+        vibrate: [200,100,200],
+        icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='32' fill='%237c6af7'/%3E%3Ctext x='32' y='42' text-anchor='middle' font-size='32'%3E💊%3C/text%3E%3C/svg%3E"
+      });
+      add("✅ Notification sent via Service Worker!", "ok");
+    } else {
+      new Notification("💊 Test — DosePing", { body: "Test notification (no SW)" });
+      add("✅ Notification sent (no SW — direct)", "ok");
+    }
+  } else {
+    add("❌ Permission denied — cannot show notification", "fail");
+  }
+}
+
+function testAlarm() {
+  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  const pattern = [{freq:880,start:0,dur:.18},{freq:1100,start:.22,dur:.18},{freq:1320,start:.44,dur:.28}];
+  pattern.forEach(p => {
+    const osc=ctx.createOscillator(), gain=ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination); osc.type="sine";
+    osc.frequency.setValueAtTime(p.freq, ctx.currentTime+p.start);
+    gain.gain.setValueAtTime(0, ctx.currentTime+p.start);
+    gain.gain.linearRampToValueAtTime(0.7, ctx.currentTime+p.start+0.03);
+    gain.gain.linearRampToValueAtTime(0, ctx.currentTime+p.start+p.dur);
+    osc.start(ctx.currentTime+p.start); osc.stop(ctx.currentTime+p.start+p.dur+.05);
+  });
+  add("✅ Alarm sound played — did you hear it?", "ok");
+}
+
+async function testBackend() {
+  add("⏳ Pinging backend...", "info");
+  try {
+    const r = await fetch("https://doseping.onrender.com/health");
+    const d = await r.json();
+    add("✅ Backend responded: " + JSON.stringify(d), "ok");
+  } catch(e) {
+    add("❌ Backend offline: " + e.message, "fail");
+  }
+}
+
+async function requestNotifPerm() {
+  const p = await Notification.requestPermission();
+  add(p === "granted" ? "✅ Permission granted!" : "❌ Permission " + p, p === "granted" ? "ok" : "fail");
+}
+
+async function checkSW() {
+  const reg = await navigator.serviceWorker.getRegistration("/");
+  if (!reg) { add("❌ No SW registered. Make sure sw.js is in the ROOT of your Vercel project.", "fail"); return; }
+  add("✅ SW scope: " + reg.scope, "ok");
+  add("   installing: " + !!reg.installing, reg.installing ? "warn" : "info");
+  add("   waiting: "    + !!reg.waiting,    reg.waiting    ? "warn" : "info");
+  add("   active: "     + !!reg.active,     reg.active     ? "ok"   : "fail");
+}
+
+async function forceAlarm() {
+  // Trigger alarm directly without waiting for medicine time
+  const token = sessionStorage.getItem("med_token");
+  if (!token) { add("❌ Not logged in", "fail"); return; }
+  // Play alarm sound
+  testAlarm();
+  // Show notification
+  await testNotification();
+  add("✅ Forced alarm triggered!", "ok");
+}
+
+// Auto-run on load
+runAll();
+</script>
+</body>
+</html>
