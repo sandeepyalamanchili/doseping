@@ -1081,7 +1081,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // Config — UPDATE THIS TO YOUR RENDER URL
 // ─────────────────────────────────────────────────────────────────────────────
-const API_BASE = "https://doseping.onrender.com/api";
+const API_BASE = "https://doseping-1.onrender.com/api";
 
 let authToken      = sessionStorage.getItem("med_token")    || null;
 let authUsername   = sessionStorage.getItem("med_username") || null;
@@ -1308,7 +1308,7 @@ function sendTokenToSW(token) {
 
 window.addEventListener("load", async () => {
   // Wake up Render backend (free tier sleeps after 15 min)
-  fetch("https://doseping.onrender.com/health").catch(()=>{});
+  fetch("https://doseping-1.onrender.com/health").catch(()=>{});
 
   // Unlock audio on first user tap
   document.addEventListener("click", () => {

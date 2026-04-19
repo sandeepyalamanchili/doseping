@@ -3,7 +3,7 @@
 // Checks for medicine reminders every minute via periodic sync or fallback.
 
 const SW_VERSION = "doseping-v1";
-const API_BASE   = "https://doseping.onrender.com/api";
+const API_BASE   = "https://doseping-1.onrender.com/api";
 
 // ── Install & activate ────────────────────────────────────────────────────
 self.addEventListener("install",  e => { self.skipWaiting(); });
