@@ -1,21 +1,17 @@
 {
-  "version": 2,
-  "routes": [
+  "rewrites": [
+    { "source": "/sw.js",      "destination": "/sw.js"      },
+    { "source": "/debug.html", "destination": "/debug.html" },
+    { "source": "/(.*)",       "destination": "/index.html" }
+  ],
+  "headers": [
     {
-      "src": "/sw.js",
-      "dest": "/sw.js",
-      "headers": {
-        "Service-Worker-Allowed": "/",
-        "Cache-Control": "no-cache"
-      }
-    },
-    {
-      "src": "/debug.html",
-      "dest": "/debug.html"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/index.html"
+      "source": "/sw.js",
+      "headers": [
+        { "key": "Service-Worker-Allowed", "value": "/" },
+        { "key": "Cache-Control",          "value": "no-cache" },
+        { "key": "Content-Type",           "value": "application/javascript" }
+      ]
     }
   ]
 }
