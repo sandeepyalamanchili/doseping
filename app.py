@@ -1,8 +1,7 @@
 print("[1/4] Loading Flask...")
 from flask import Flask, request, jsonify, g
 from functools import wraps
-from datetime import datetime, timezone, timedelta
-IST = timezone(timedelta(hours=5, minutes=30))
+from datetime import datetime
 import os
 import sys
 import subprocess
@@ -25,7 +24,7 @@ BASE_DIR = os.getenv(
 )
  
 print("[4/4] Creating Flask app...")
-app = Flask(__name__, static_folder=BASE_DIR, static_url_path="")
+app = Flask(__name__)
 CORS(app, resources={r"/api/*": {"origins": "*"}})
  
  
@@ -51,7 +50,7 @@ def require_auth(f):
 # ── Frontend ──────────────────────────────────────────────────────────────────
 @app.route("/")
 def index():
-    return jsonify({"status":"api only"})
+    return jsonify({"status": "DosePing API", "version": "1.0"})
  
  
 # ── Auth endpoints (NO token required) ───────────────────────────────────────
@@ -273,7 +272,7 @@ def get_thresholds():
 @require_auth
 def check_reminders():
     try:
-        now  = datetime.now(IST).strftime("%H:%M")
+        now  = datetime.now().strftime("%H:%M")
         meds = db.get_all_medicines_for_user(g.user["user_id"])
         due  = [m for m in meds if now in m.get("times", [])]
         return jsonify({"time": now, "due": due})
