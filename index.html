@@ -1,4 +1,4 @@
-<!<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en" id="html-root">
 <head>
   <meta charset="UTF-8">
@@ -27,9 +27,9 @@
       --cyan:     #06b6d4;
       --glow:     rgba(124,106,247,0.15);
     }
- 
+
     *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
- 
+
     body {
       font-family: 'DM Sans', sans-serif;
       background: var(--bg);
@@ -37,9 +37,9 @@
       min-height: 100vh;
       overflow-x: hidden;
     }
- 
+
     h1,h2,h3,h4 { font-family: 'Syne', sans-serif; }
- 
+
     /* ── Background mesh ── */
     body::before {
       content: '';
@@ -51,7 +51,7 @@
       pointer-events: none;
       z-index: 0;
     }
- 
+
     /* ── Loading ── */
     #loading-overlay {
       position: fixed; inset: 0;
@@ -74,7 +74,7 @@
       color: var(--text3);
     }
     @keyframes spin { to { transform: rotate(360deg); } }
- 
+
     /* ── Toast ── */
     #toast {
       position: fixed; bottom: 2rem; left: 50%;
@@ -98,7 +98,7 @@
       opacity: 1;
       transform: translateX(-50%) translateY(0);
     }
- 
+
     /* ── Card ── */
     .card {
       background: var(--bg2);
@@ -114,7 +114,7 @@
       background: linear-gradient(135deg, rgba(255,255,255,0.025) 0%, transparent 60%);
       pointer-events: none;
     }
- 
+
     /* ── Auth ── */
     .auth-wrap {
       min-height: 100vh;
@@ -200,7 +200,7 @@
     .pw-wrap { position: relative; }
     .pw-toggle { position: absolute; right: 0.875rem; top: 50%; transform: translateY(-50%); cursor: pointer; color: var(--text3); font-size: 0.78rem; font-weight: 500; user-select: none; letter-spacing: 0.05em; }
     .pw-toggle:hover { color: var(--text2); }
- 
+
     /* ── Language bar ── */
     .lang-bar {
       background: rgba(17,17,24,0.8);
@@ -243,7 +243,7 @@
     }
     .translate-btn:hover { background: rgba(124,106,247,0.25); border-color: var(--accent); }
     .translate-status { font-size: 0.7rem; color: var(--green); }
- 
+
     /* ── App layout ── */
     .app-wrap {
       max-width: 680px;
@@ -252,7 +252,7 @@
       position: relative;
       z-index: 1;
     }
- 
+
     /* ── Header ── */
     .app-header {
       background: var(--bg2);
@@ -286,7 +286,7 @@
     .conn-dot.online { background: var(--green); box-shadow: 0 0 6px var(--green); animation: pulse-dot 2s infinite; }
     .conn-dot.offline { background: var(--red); }
     @keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:0.5} }
- 
+
     /* ── Tab bar ── */
     .tab-bar {
       background: var(--bg2);
@@ -318,7 +318,7 @@
       box-shadow: 0 4px 16px rgba(124,106,247,0.3);
     }
     .tab-btn:not(.active):hover { color: var(--text2); background: rgba(255,255,255,0.04); }
- 
+
     /* ── Pill badge ── */
     .pill {
       display: inline-flex; align-items: center;
@@ -333,7 +333,7 @@
     .pill-amber { background: rgba(245,158,11,0.12); color: var(--amber); border: 1px solid rgba(245,158,11,0.2); }
     .pill-blue  { background: rgba(6,182,212,0.12);  color: var(--cyan);  border: 1px solid rgba(6,182,212,0.2); }
     .pill-purple{ background: rgba(124,106,247,0.12);color: var(--accent2);border: 1px solid rgba(124,106,247,0.2);}
- 
+
     /* ── Buttons ── */
     .btn-primary {
       background: var(--accent);
@@ -387,7 +387,7 @@
     .btn-icon-purple:hover { background: rgba(124,106,247,0.2); }
     .btn-icon-red { background: rgba(239,68,68,0.08); color: var(--red); }
     .btn-icon-red:hover { background: rgba(239,68,68,0.18); }
- 
+
     /* ── Input ── */
     .input {
       width: 100%;
@@ -421,7 +421,7 @@
     }
     .select-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(124,106,247,0.1); }
     .select-input option { background: var(--bg3); }
- 
+
     /* ── Medicine card ── */
     .med-card {
       background: var(--bg2);
@@ -452,7 +452,7 @@
       font-size: 0.72rem;
       font-weight: 600;
     }
- 
+
     /* ── Dose log ── */
     .dose-row {
       display: flex; align-items: center; justify-content: space-between;
@@ -477,7 +477,7 @@
     .dose-take:hover, .dose-take.active { background: var(--green); color: #fff; border-color: var(--green); }
     .dose-skip { background: rgba(239,68,68,0.08); color: var(--red); border-color: rgba(239,68,68,0.15); }
     .dose-skip:hover, .dose-skip.active { background: var(--red); color: #fff; border-color: var(--red); }
- 
+
     /* ── Vital card ── */
     .vital-card {
       background: var(--bg2);
@@ -491,7 +491,7 @@
     .vital-card.normal { border-left: 3px solid var(--green); }
     .vital-card.high   { border-left: 3px solid var(--red); }
     .vital-card.low    { border-left: 3px solid var(--amber); }
- 
+
     /* ── Profile card ── */
     .profile-btn {
       width: 100%;
@@ -511,7 +511,7 @@
       display: flex; align-items: center; justify-content: center;
       flex-shrink: 0;
     }
- 
+
     /* ── Stat card ── */
     .stat-card {
       background: var(--bg3);
@@ -528,7 +528,7 @@
       margin-bottom: 0.35rem;
     }
     .stat-label { font-size: 0.72rem; color: var(--text3); font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; }
- 
+
     /* ── Section title ── */
     .section-title {
       font-family: 'Syne', sans-serif;
@@ -545,7 +545,7 @@
       flex: 1; height: 1px;
       background: var(--border);
     }
- 
+
     /* ── Threshold row ── */
     .threshold-row {
       display: flex; align-items: center; justify-content: space-between;
@@ -554,7 +554,7 @@
       font-size: 0.82rem;
     }
     .threshold-row:last-child { border-bottom: none; }
- 
+
     /* ── Alarm overlay ── */
     #alarm-overlay {
       position: fixed; inset: 0;
@@ -619,7 +619,7 @@
       transition: all 0.2s;
     }
     .alarm-snooze-btn:hover { background: rgba(255,255,255,0.06); }
- 
+
     /* ── Notification banner ── */
     .notif-banner {
       background: rgba(245,158,11,0.08);
@@ -629,10 +629,10 @@
       display: flex; align-items: center; gap: 0.75rem;
       margin-top: 1rem;
     }
- 
+
     /* ── Password strength ── */
     .strength-bar { height: 3px; border-radius: 2px; transition: width 0.3s, background 0.3s; }
- 
+
     /* ── Color picker ── */
     .color-swatch {
       width: 40px; height: 40px;
@@ -642,18 +642,18 @@
       transition: all 0.15s;
     }
     .color-swatch:hover, .color-swatch.selected { border-color: #fff; transform: scale(1.1); }
- 
+
     /* ── Scrollbar ── */
     ::-webkit-scrollbar { width: 4px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
- 
+
     /* ── Animations ── */
     .fade-in { animation: fadeIn 0.3s ease; }
     @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
- 
+
     canvas { max-height: 220px; }
- 
+
     /* Chart theming */
     .chart-wrap {
       background: var(--bg3);
@@ -664,14 +664,14 @@
   </style>
 </head>
 <body>
- 
+
 <div id="loading-overlay" style="display:none">
   <div class="loader-ring"></div>
   <span class="loader-text">Loading</span>
 </div>
- 
+
 <div id="toast"></div>
- 
+
 <!-- ══ ALARM ══════════════════════════════════════════════════════════════ -->
 <div id="alarm-overlay">
   <div class="alarm-card fade-in">
@@ -688,7 +688,7 @@
     <button class="alarm-snooze-btn" onclick="snoozeAlarm()" data-i18n="alarm_snooze">⏰ Snooze 5 minutes</button>
   </div>
 </div>
- 
+
 <!-- ══ LANGUAGE BAR ═══════════════════════════════════════════════════════ -->
 <div class="lang-bar" id="lang-bar">
   <span class="lang-label">🌐 Lang</span>
@@ -717,7 +717,7 @@
   <button class="translate-btn" onclick="translatePage()">Translate</button>
   <span class="translate-status" id="translate-status"></span>
 </div>
- 
+
 <!-- ══ LOGIN ══════════════════════════════════════════════════════════════ -->
 <div id="login-screen" style="display:none">
   <div class="auth-wrap">
@@ -751,7 +751,7 @@
     </div>
   </div>
 </div>
- 
+
 <!-- ══ REGISTER ═══════════════════════════════════════════════════════════ -->
 <div id="register-screen" style="display:none">
   <div class="auth-wrap">
@@ -801,11 +801,11 @@
     </div>
   </div>
 </div>
- 
+
 <!-- ══ MAIN APP ════════════════════════════════════════════════════════════ -->
 <div id="app-screen" style="display:none">
   <div class="app-wrap">
- 
+
     <!-- Profile Selection -->
     <div id="profile-screen" style="display:none" class="fade-in">
       <div class="card" style="padding:2.5rem;text-align:center;margin-bottom:1rem">
@@ -818,7 +818,7 @@
         <button onclick="showAddProfile()" class="btn-primary" style="width:100%;justify-content:center" data-i18n="add_profile">+ Add New Profile</button>
       </div>
     </div>
- 
+
     <!-- Add Profile -->
     <div id="add-profile-screen" style="display:none" class="fade-in">
       <div class="card" style="padding:2rem">
@@ -846,10 +846,10 @@
         </div>
       </div>
     </div>
- 
+
     <!-- Main Screen -->
     <div id="main-screen" style="display:none" class="fade-in">
- 
+
       <!-- Header -->
       <div class="app-header" style="margin-bottom:1rem">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.875rem">
@@ -885,7 +885,7 @@
           <button onclick="requestNotifications()" style="background:#f59e0b;color:#000;border:none;border-radius:8px;padding:0.4rem 0.75rem;font-size:0.72rem;font-weight:700;cursor:pointer;font-family:'Syne',sans-serif" data-i18n="enable">Enable</button>
         </div>
       </div>
- 
+
       <!-- Tabs -->
       <div class="tab-bar">
         <button class="tab-btn active" id="tab-medicines" onclick="switchTab('medicines')">💊 <span data-i18n="medicines">Medicines</span></button>
@@ -893,7 +893,7 @@
         <button class="tab-btn" id="tab-analytics" onclick="switchTab('analytics')">📊 <span data-i18n="analytics">Analytics</span></button>
         <button class="tab-btn" id="tab-vitals" onclick="switchTab('vitals')">❤️ <span data-i18n="vitals">Vitals</span></button>
       </div>
- 
+
       <!-- TAB: MEDICINES -->
       <div id="pane-medicines">
         <div id="add-form" style="display:none" class="card fade-in" style="padding:1.5rem;margin-bottom:1rem">
@@ -932,7 +932,7 @@
         </button>
         <div id="medicine-list"></div>
       </div>
- 
+
       <!-- TAB: TODAY -->
       <div id="pane-today" style="display:none">
         <div class="card" style="padding:1.25rem;margin-bottom:1rem">
@@ -941,7 +941,7 @@
         </div>
         <div id="today-list"></div>
       </div>
- 
+
       <!-- TAB: ANALYTICS -->
       <div id="pane-analytics" style="display:none">
         <div class="card" style="padding:1.25rem;margin-bottom:1rem">
@@ -951,7 +951,7 @@
         <div id="analytics-med-selector" style="display:flex;flex-direction:column;gap:0.5rem;margin-bottom:1rem"></div>
         <div id="analytics-panel" style="display:none;flex-direction:column;gap:1rem"></div>
       </div>
- 
+
       <!-- TAB: VITALS -->
       <div id="pane-vitals" style="display:none">
         <div class="card" style="padding:1.5rem;margin-bottom:1rem">
@@ -988,12 +988,12 @@
             <button onclick="saveVital()" class="btn-primary" style="width:100%;justify-content:center" data-i18n="log_vital_btn">Log Vital</button>
           </div>
         </div>
- 
+
         <div class="card" style="padding:1.25rem;margin-bottom:1rem">
           <p class="section-title" data-i18n="normal_ranges">Normal Ranges</p>
           <div id="threshold-table"></div>
         </div>
- 
+
         <div class="card" style="padding:1.25rem;margin-bottom:1rem">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
             <p class="section-title" style="margin-bottom:0" data-i18n="recent_readings">Recent Readings</p>
@@ -1013,7 +1013,7 @@
           </div>
           <div id="vitals-list"></div>
         </div>
- 
+
         <div id="vitals-chart-card" style="display:none" class="card" style="padding:1.25rem;margin-bottom:1rem">
           <div style="padding:1.25rem">
             <p class="section-title" id="vitals-chart-title" style="margin-bottom:0.875rem">Trend</p>
@@ -1021,9 +1021,9 @@
           </div>
         </div>
       </div>
- 
+
     </div><!-- /main-screen -->
- 
+
     <!-- Manage Profiles -->
     <div id="manage-screen" style="display:none" class="fade-in">
       <div class="card" style="padding:1.75rem">
@@ -1036,7 +1036,7 @@
         <div id="manage-profile-list"></div>
       </div>
     </div>
- 
+
     <!-- Change Password -->
     <div id="change-pw-screen" style="display:none" class="fade-in">
       <div class="card" style="padding:1.75rem;max-width:420px;margin:0 auto">
@@ -1073,16 +1073,16 @@
         </div>
       </div>
     </div>
- 
+
   </div>
 </div>
- 
+
 <script>
 // ─────────────────────────────────────────────────────────────────────────────
 // Config — UPDATE THIS TO YOUR RENDER URL
 // ─────────────────────────────────────────────────────────────────────────────
 const API_BASE = "https://doseping.onrender.com/api";
- 
+
 let authToken      = sessionStorage.getItem("med_token")    || null;
 let authUsername   = sessionStorage.getItem("med_username") || null;
 let profiles       = [];
@@ -1095,14 +1095,14 @@ let vitalsChartObj = null;
 let adherenceChart = null;
 const THRESHOLDS   = {};
 let currentLang    = localStorage.getItem("med_lang") || "en";
- 
+
 const APP_SCREENS = ["login-screen","register-screen","app-screen"];
 const SUB_SCREENS = ["profile-screen","add-profile-screen","main-screen","manage-screen","change-pw-screen"];
 const PANES       = ["medicines","today","analytics","vitals"];
- 
+
 Chart.defaults.color = '#8888a0';
 Chart.defaults.borderColor = 'rgba(255,255,255,0.06)';
- 
+
 // ─── i18n ─────────────────────────────────────────────────────────────────
 const I18N = { en: {
   app_name:"DosePing", login_subtitle:"Sign in to continue",
@@ -1128,7 +1128,7 @@ const I18N = { en: {
   alarm_ok:"✓ Taken — Mark as done", alarm_snooze:"⏰ Snooze 5 minutes",
   enable_notif:"Enable Notifications", notif_desc:"Receive reminders on time", enable:"Enable",
 }};
- 
+
 // ─── Translation ───────────────────────────────────────────────────────────
 async function apiTranslate(text, targetLang, sourceLang = "auto") {
   if (!text || text.trim() === "" || targetLang === sourceLang) return text;
@@ -1173,7 +1173,7 @@ function changeUiLanguage(lang) {
   if (lang === "en") { applyI18nEnglish(); document.getElementById("translate-status").textContent = ""; }
   else translatePage();
 }
- 
+
 // ─── Utility ───────────────────────────────────────────────────────────────
 function showLoading(on) { document.getElementById("loading-overlay").style.display = on ? "flex" : "none"; }
 function showToast(msg, ms=2800) {
@@ -1196,7 +1196,7 @@ function switchTab(tab) {
   if (tab==="analytics") renderAnalyticsMedList();
   if (tab==="vitals")    loadAndRenderVitals();
 }
- 
+
 // ─── API ───────────────────────────────────────────────────────────────────
 async function api(path, opts={}) {
   showLoading(true);
@@ -1210,7 +1210,7 @@ async function api(path, opts={}) {
     return data;
   } finally { showLoading(false); }
 }
- 
+
 // ─── Auth ──────────────────────────────────────────────────────────────────
 function togglePw(inputId, btn) {
   const inp = document.getElementById(inputId);
@@ -1289,9 +1289,17 @@ function doLogout(silent=false) {
   showScreen("login-screen");
   if (!silent) showToast("Logged out");
 }
- 
+
 // ─── Boot ──────────────────────────────────────────────────────────────────
 window.addEventListener("load", async () => {
+  // Wake up Render backend (free tier sleeps after 15 min)
+  fetch("https://doseping.onrender.com/health").catch(()=>{});
+
+  // Unlock audio on first user tap
+  document.addEventListener("click", () => {
+    if (!audioCtx) getAudioCtx();
+    if (audioCtx && audioCtx.state === "suspended") audioCtx.resume();
+  }, { once: true });
   document.getElementById("ui-lang").value = currentLang;
   if (authToken) {
     showLoading(true);
@@ -1308,7 +1316,7 @@ window.addEventListener("load", async () => {
   }
   showScreen("login-screen"); setInterval(checkReminders,60000);
 });
- 
+
 // ─── App entry ─────────────────────────────────────────────────────────────
 async function enterApp() {
   showScreen("app-screen");
@@ -1325,10 +1333,17 @@ async function enterApp() {
   await loadProfiles();
   if (profiles.length===0) showSubScreen("profile-screen");
   else showProfileSelection();
+  // Auto-request notification permission on login
+  if ("Notification" in window && Notification.permission === "default") {
+    Notification.requestPermission().then(p => {
+      if (p === "granted") new Notification("✅ Notifications enabled!", {body:"You will receive medicine reminders on time"});
+      checkNotificationPermission();
+    });
+  }
   checkNotificationPermission();
   if (currentLang!=="en") setTimeout(()=>translatePage(),500);
 }
- 
+
 // ─── Profiles ──────────────────────────────────────────────────────────────
 async function loadProfiles() {
   try { const d=await api("/profiles"); profiles=d.profiles||[]; } catch { profiles=[]; }
@@ -1410,7 +1425,7 @@ async function submitChangePassword() {
   try { await api("/auth/change-password",{method:"POST",body:{old_password,new_password}}); showToast("✅ Password updated!"); backToMain(); }
   catch(e) { document.getElementById("cpw-error").textContent=e.message; document.getElementById("cpw-error").classList.add("show"); }
 }
- 
+
 // ─── Medicines ─────────────────────────────────────────────────────────────
 function toggleAddForm() {
   const f=document.getElementById("add-form");
@@ -1429,7 +1444,7 @@ function renderTimeSlots() {
 function addTimeSlot() { times.push("09:00"); renderTimeSlots(); }
 function updateTime(i,v) { times[i]=v; }
 function removeTime(i) { times=times.filter((_,j)=>j!==i); renderTimeSlots(); }
- 
+
 async function saveMedicine() {
   const name=document.getElementById("med-name").value.trim();
   const dosage=document.getElementById("med-dosage").value.trim();
@@ -1475,7 +1490,7 @@ async function renderMedicines() {
       </div>`).join("");
   } catch { c.innerHTML=`<p style="text-align:center;color:var(--red);padding:2rem;font-size:0.82rem">Cannot load — is backend running?</p>`; }
 }
- 
+
 // ─── Today ─────────────────────────────────────────────────────────────────
 async function renderToday() {
   const now=new Date(); const today=now.toISOString().slice(0,10);
@@ -1514,7 +1529,7 @@ async function logDose(medId,time,date,status) {
     showToast(status==="taken"?"✅ Marked as taken!":"⏭ Marked as skipped");
   } catch(e) { showToast("❌ "+e.message); }
 }
- 
+
 // ─── Analytics ─────────────────────────────────────────────────────────────
 function renderAnalyticsMedList() {
   const sel=document.getElementById("analytics-med-selector");
@@ -1603,7 +1618,7 @@ function renderAnalyticsPanel(d) {
     return `<div style="background:${bg};border:1px solid ${border};border-radius:4px;aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:0.6rem;font-weight:700;color:${day.taken===day.expected&&day.expected>0?'#fff':'var(--text3)'}" title="${day.date}: ${day.taken} taken, ${day.skipped} skipped">${day.date.slice(8)}</div>`;
   }).join("");
 }
- 
+
 // ─── Vitals ─────────────────────────────────────────────────────────────────
 function onVitalMetricChange() {
   const metric=document.getElementById("vital-metric").value;
@@ -1689,7 +1704,7 @@ function buildThresholdTable() {
     return `<div class="threshold-row"><span style="color:var(--text2)">${t.label}</span><span style="font-family:'Syne',sans-serif;font-weight:700;font-size:0.82rem;color:var(--accent2)">${range}</span></div>`;
   }).join("");
 }
- 
+
 // ─── Alarm ─────────────────────────────────────────────────────────────────
 let audioCtx=null,alarmInterval=null,alarmRinging=false;
 function getAudioCtx() { if (!audioCtx) audioCtx=new (window.AudioContext||window.webkitAudioContext)(); return audioCtx; }
@@ -1722,7 +1737,7 @@ function snoozeAlarm() {
   const dosage=document.getElementById("alarm-med-dosage").textContent;
   setTimeout(()=>startAlarm(name,dosage),5*60*1000);
 }
- 
+
 // ─── Notifications ─────────────────────────────────────────────────────────
 function checkNotificationPermission() {
   if (!("Notification" in window)) return;
@@ -1736,25 +1751,36 @@ function requestNotifications() {
     checkNotificationPermission();
   });
 }
- 
+
 const _firedThisMinute=new Set();
 async function checkReminders() {
   if (!authToken) return;
   try {
-    const d=await fetch(API_BASE+"/reminders/check",{headers:{"Authorization":"Bearer "+authToken}}).then(r=>r.json());
+    const controller=new AbortController();
+    const timeout=setTimeout(()=>controller.abort(),10000);
+    const res=await fetch(API_BASE+"/reminders/check",{headers:{"Authorization":"Bearer "+authToken},signal:controller.signal});
+    clearTimeout(timeout);
+    if (!res.ok) return;
+    const d=await res.json();
+    document.getElementById("backend-dot").className="conn-dot online";
+    document.getElementById("backend-label").textContent="Connected ✓";
     const currentMinute=new Date().toISOString().slice(0,16);
     (d.due||[]).forEach(m=>{
       const key=`${m.id}-${currentMinute}`;
       if (_firedThisMinute.has(key)) return;
       _firedThisMinute.add(key);
-      if (_firedThisMinute.size>100) { const f=_firedThisMinute.values().next().value; _firedThisMinute.delete(f); }
-      if ("Notification" in window&&Notification.permission==="granted") {
-        const n=new Notification("💊 Medicine Reminder",{body:`${m.name} — ${m.dosage}`,requireInteraction:true,tag:key});
+      if (_firedThisMinute.size>100){const f=_firedThisMinute.values().next().value;_firedThisMinute.delete(f);}
+      if ("Notification" in window&&Notification.permission==="granted"){
+        const n=new Notification("💊 "+m.name,{body:"Time to take "+m.dosage,requireInteraction:true,tag:key});
+        n.onclick=()=>{window.focus();stopAlarm();n.close();};
         setTimeout(()=>n.close(),60000);
       }
       startAlarm(m.name,m.dosage);
     });
-  } catch {}
+  } catch(e){
+    if(document.getElementById("backend-dot")&&e.name!=="AbortError")
+      document.getElementById("backend-dot").className="conn-dot offline";
+  }
 }
 </script>
 </body>
