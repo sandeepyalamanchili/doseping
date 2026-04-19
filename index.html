@@ -1295,9 +1295,8 @@ function handleClockClick(e) {
             <div style="display:flex;flex-direction:column;gap:1rem">
               <div>
                 <label class="auth-label" data-i18n="medicine_name">Medicine Name</label>
-                <div style="display:flex;gap:0.5rem">
+                <div>
                   <input type="text" id="med-name" class="input" placeholder="e.g., Aspirin" style="flex:1">
-                  <button onclick="translateFieldToEn('med-name')" class="translate-btn" title="Translate to English">🌐</button>
                 </div>
               </div>
               <div>
@@ -1373,9 +1372,8 @@ function handleClockClick(e) {
             </div>
             <div>
               <label class="auth-label" data-i18n="notes">Notes (optional)</label>
-              <div style="display:flex;gap:0.5rem">
+              <div>
                 <input type="text" id="vital-notes" class="input" placeholder="e.g., After breakfast" style="flex:1">
-                <button onclick="translateFieldToEn('vital-notes')" class="translate-btn" title="Translate to English">🌐</button>
               </div>
             </div>
             <button onclick="saveVital()" class="btn-primary" style="width:100%;justify-content:center" data-i18n="log_vital_btn">Log Vital</button>
@@ -1526,13 +1524,25 @@ const I18N = { en: {
 async function apiTranslate(text, targetLang, sourceLang = "auto") {
   if (!text || text.trim() === "" || targetLang === sourceLang) return text;
   try {
-    const res = await fetch(API_BASE + "/translate", {
-      method:"POST", headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({text, target: targetLang, source: sourceLang})
-    });
+    // Call MyMemory directly from browser - faster, no backend needed
+    const langPair = sourceLang === "auto" ? `en|${targetLang}` : `${sourceLang}|${targetLang}`;
+    const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${langPair}`;
+    const res  = await fetch(url);
     const data = await res.json();
-    return data.translated || text;
-  } catch { return text; }
+    const translated = data?.responseData?.translatedText;
+    if (!translated || translated.toUpperCase() === text.toUpperCase()) return text;
+    return translated;
+  } catch {
+    // Fallback to backend if direct call fails
+    try {
+      const res = await fetch(API_BASE + "/translate", {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({text, target: targetLang, source: sourceLang})
+      });
+      const data = await res.json();
+      return data.translated || text;
+    } catch { return text; }
+  }
 }
 async function translateFieldToEn(inputId) {
   const inp = document.getElementById(inputId);
