@@ -24,7 +24,7 @@ BASE_DIR = os.getenv(
 )
  
 print("[4/4] Creating Flask app...")
-app = Flask(__name__)
+app = Flask(__name__, static_folder=BASE_DIR, static_url_path="")
 CORS(app, resources={r"/api/*": {"origins": "*"}})
  
  
@@ -50,7 +50,7 @@ def require_auth(f):
 # ── Frontend ──────────────────────────────────────────────────────────────────
 @app.route("/")
 def index():
-    return jsonify({"status": "DosePing API", "version": "1.0"})
+    return app.send_static_file("index.html")
  
  
 # ── Auth endpoints (NO token required) ───────────────────────────────────────
@@ -272,7 +272,11 @@ def get_thresholds():
 @require_auth
 def check_reminders():
     try:
-        now  = datetime.now().strftime("%H:%M")
+        # Use client-provided time if available, otherwise fall back to server time
+        # Client sends ?time=HH:MM using their device/system time
+        now = request.args.get("time", "").strip()
+        if not now or len(now) != 5 or ":" not in now:
+            now = datetime.utcnow().strftime("%H:%M")
         meds = db.get_all_medicines_for_user(g.user["user_id"])
         due  = [m for m in meds if now in m.get("times", [])]
         return jsonify({"time": now, "due": due})

@@ -1081,7 +1081,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // Config — UPDATE THIS TO YOUR RENDER URL
 // ─────────────────────────────────────────────────────────────────────────────
-const API_BASE = "https://doseping-1.onrender.com/api";
+const API_BASE = "https://doseping.onrender.com/api";
 
 let authToken      = sessionStorage.getItem("med_token")    || null;
 let authUsername   = sessionStorage.getItem("med_username") || null;
@@ -1308,7 +1308,7 @@ function sendTokenToSW(token) {
 
 window.addEventListener("load", async () => {
   // Wake up Render backend (free tier sleeps after 15 min)
-  fetch("https://doseping-1.onrender.com/health").catch(()=>{});
+  fetch("https://doseping.onrender.com/health").catch(()=>{});
 
   // Unlock audio on first user tap
   document.addEventListener("click", () => {
@@ -1353,7 +1353,8 @@ async function enterApp() {
   showScreen("app-screen");
   document.getElementById("user-badge").textContent = "👤 " + authUsername;
   try {
-    await fetch(API_BASE+"/reminders/check",{headers:{"Authorization":"Bearer "+authToken}});
+    const _dt=new Date().getHours().toString().padStart(2,"0")+":"+new Date().getMinutes().toString().padStart(2,"0");
+    await fetch(API_BASE+"/reminders/check?time="+_dt,{headers:{"Authorization":"Bearer "+authToken}});
     document.getElementById("backend-dot").className="conn-dot online";
     document.getElementById("backend-label").textContent="Connected ✓";
   } catch {
@@ -1787,16 +1788,30 @@ const _firedThisMinute=new Set();
 async function checkReminders() {
   if (!authToken) return;
   try {
+    // Use DEVICE time — no timezone issues
+    const now = new Date();
+    const deviceTime = now.getHours().toString().padStart(2,"0") + ":" + now.getMinutes().toString().padStart(2,"0");
+    const currentMinute = now.toISOString().slice(0,16);
+
+    // Get all medicines from backend
     const controller=new AbortController();
     const timeout=setTimeout(()=>controller.abort(),10000);
-    const res=await fetch(API_BASE+"/reminders/check",{headers:{"Authorization":"Bearer "+authToken},signal:controller.signal});
+    const res=await fetch(API_BASE+"/profiles/"+currentProfile?.id+"/medicines",{
+      headers:{"Authorization":"Bearer "+authToken},
+      signal:controller.signal
+    });
     clearTimeout(timeout);
     if (!res.ok) return;
     const d=await res.json();
+
     document.getElementById("backend-dot").className="conn-dot online";
     document.getElementById("backend-label").textContent="Connected ✓";
-    const currentMinute=new Date().toISOString().slice(0,16);
-    (d.due||[]).forEach(m=>{
+
+    // Compare medicine times against DEVICE time
+    const medicines = d.medicines || [];
+    medicines.forEach(m=>{
+      const times = Array.isArray(m.times) ? m.times : [];
+      if (!times.includes(deviceTime)) return;
       const key=`${m.id}-${currentMinute}`;
       if (_firedThisMinute.has(key)) return;
       _firedThisMinute.add(key);
