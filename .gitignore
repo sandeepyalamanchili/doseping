@@ -1,0 +1,8 @@
+node_modules/
+.wrangler/
+.dev.vars
+.env
+*.log
+migrate.sql
+supabase-export.json
+.DS_Store

@@ -1,0 +1,14 @@
+{
+  "name": "doseping",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "db:local": "wrangler d1 migrations apply doseping-db --local",
+    "db:remote": "wrangler d1 migrations apply doseping-db --remote",
+    "deploy": "wrangler deploy",
+    "test": "node scripts/smoke-test.mjs"
+  },
+  "devDependencies": { "wrangler": "^4.0.0" }
+}
