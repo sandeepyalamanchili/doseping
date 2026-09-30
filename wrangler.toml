@@ -12,7 +12,7 @@ run_worker_first = ["/api/*"]
 [[d1_databases]]
 binding = "DB"
 database_name = "doseping-db"
-database_id = "REPLACE_WITH_ID_FROM_wrangler_d1_create"
+database_id = "d09ebf6f-ad06-4dec-8441-662c24c4f0ce"
 migrations_dir = "migrations"
 
 [vars]
